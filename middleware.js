@@ -9,25 +9,31 @@ export async function middleware(request) {
   // attach refreshed auth cookies to.
   const response = intlMiddleware(request)
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll()
+  // Session refresh must never take the site down: if Supabase is
+  // misconfigured or unreachable, serve the page and let route-level auth
+  // checks handle the rest.
+  try {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    if (url && anonKey) {
+      const supabase = createServerClient(url, anonKey, {
+        cookies: {
+          getAll() {
+            return request.cookies.getAll()
+          },
+          setAll(cookiesToSet) {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              response.cookies.set(name, value, options)
+            )
+          },
         },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) =>
-            response.cookies.set(name, value, options)
-          )
-        },
-      },
+      })
+      // Refreshes the session cookie if expired; must be awaited in middleware.
+      await supabase.auth.getUser()
     }
-  )
-
-  // Refreshes the session cookie if expired; must be awaited in middleware.
-  await supabase.auth.getUser()
+  } catch (e) {
+    console.error('middleware auth refresh failed:', e?.message)
+  }
 
   return response
 }
