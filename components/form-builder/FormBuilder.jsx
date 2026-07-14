@@ -1,0 +1,180 @@
+'use client'
+
+import { useEffect, useRef, useState } from 'react'
+import { useLocale, useTranslations } from 'next-intl'
+import { useRouter } from '@/lib/i18n/navigation'
+import {
+  DndContext,
+  PointerSensor,
+  KeyboardSensor,
+  useSensor,
+  useSensors,
+  closestCenter,
+} from '@dnd-kit/core'
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+  sortableKeyboardCoordinates,
+} from '@dnd-kit/sortable'
+import { getSupabaseBrowserClient } from '@/lib/supabase/client'
+import { lt } from '@/lib/i18n/locales'
+import { Button } from '@/components/ui'
+import { useBuilderStore } from './store'
+import { SortableQuestionCard } from './SortableQuestionCard'
+import { QuestionInspector } from './QuestionInspector'
+import styles from './builder.module.css'
+
+const QUESTION_TYPES = [
+  'text', 'textarea', 'select', 'multiselect', 'radio', 'checkbox',
+  'date', 'number', 'email', 'phone', 'file', 'section',
+]
+
+export function FormBuilder({
+  versionId,
+  versionNumber,
+  initialDefinition,
+  participantTypes,
+  defaultLocale,
+}) {
+  const t = useTranslations('console')
+  const tq = useTranslations('questionTypes')
+  const locale = useLocale()
+  const router = useRouter()
+  const supabase = getSupabaseBrowserClient()
+
+  const store = useBuilderStore()
+  const { definition, selectedId, dirty } = store
+  const [saveState, setSaveState] = useState('idle') // idle | saving | saved | published
+  const initialized = useRef(false)
+
+  useEffect(() => {
+    if (!initialized.current) {
+      store.init(initialDefinition)
+      initialized.current = true
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Debounced autosave of the draft version.
+  useEffect(() => {
+    if (!dirty) return
+    setSaveState('saving')
+    const handle = setTimeout(async () => {
+      const { error } = await supabase
+        .from('form_versions')
+        .update({ definition })
+        .eq('id', versionId)
+      if (!error) {
+        store.markSaved()
+        setSaveState('saved')
+      } else {
+        setSaveState('idle')
+      }
+    }, 1200)
+    return () => clearTimeout(handle)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [definition, dirty, versionId])
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  )
+
+  async function publish() {
+    // Flush any pending edits first.
+    await supabase.from('form_versions').update({ definition }).eq('id', versionId)
+    const { error } = await supabase.rpc('publish_form_version', { p_version_id: versionId })
+    if (!error) {
+      setSaveState('published')
+      router.refresh()
+    }
+  }
+
+  const selected = definition.questions.find((q) => q.id === selectedId)
+
+  return (
+    <div className={styles.builder}>
+      {/* Palette */}
+      <aside className={styles.palette} aria-label={t('addQuestion')}>
+        <h2 className="eyebrow">{t('addQuestion')}</h2>
+        <div className={styles.paletteGrid}>
+          {QUESTION_TYPES.map((type) => (
+            <button
+              key={type}
+              className={styles.paletteItem}
+              onClick={() => store.addQuestion(type)}
+            >
+              {tq(type)}
+            </button>
+          ))}
+        </div>
+      </aside>
+
+      {/* Canvas */}
+      <section className={styles.canvas}>
+        <div className={styles.canvasHead}>
+          <span className={styles.version}>v{versionNumber}</span>
+          <span aria-live="polite" className={styles.saveState}>
+            {saveState === 'saving' && t('draftSaving')}
+            {saveState === 'saved' && t('draftSaved')}
+            {saveState === 'published' && t('formPublished')}
+          </span>
+          <span style={{ flex: 1 }} />
+          <Button variant="ghost" size="sm" onClick={store.undo} aria-label="Undo">
+            ↩
+          </Button>
+          <Button variant="ghost" size="sm" onClick={store.redo} aria-label="Redo">
+            ↪
+          </Button>
+          <Button size="sm" onClick={publish}>
+            {t('publishForm')}
+          </Button>
+        </div>
+
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={({ active, over }) => {
+            if (over && active.id !== over.id) store.moveQuestion(active.id, over.id)
+          }}
+        >
+          <SortableContext
+            items={definition.questions.map((q) => q.id)}
+            strategy={verticalListSortingStrategy}
+          >
+            <ul className={styles.questionList}>
+              {definition.questions.map((q) => (
+                <SortableQuestionCard
+                  key={q.id}
+                  question={q}
+                  locale={locale}
+                  defaultLocale={defaultLocale}
+                  typeLabel={tq(q.type)}
+                  selected={q.id === selectedId}
+                  onSelect={() => store.select(q.id)}
+                  onRemove={() => store.removeQuestion(q.id)}
+                />
+              ))}
+            </ul>
+          </SortableContext>
+        </DndContext>
+      </section>
+
+      {/* Inspector */}
+      <aside className={styles.inspector}>
+        {selected ? (
+          <QuestionInspector
+            key={selected.id}
+            question={selected}
+            allQuestions={definition.questions}
+            participantTypes={participantTypes}
+            defaultLocale={defaultLocale}
+            onChange={(patch) => store.updateQuestion(selected.id, patch)}
+          />
+        ) : (
+          <p className={styles.inspectorEmpty}>{lt({ en: 'Select a question to edit it.' }, locale)}</p>
+        )}
+      </aside>
+    </div>
+  )
+}

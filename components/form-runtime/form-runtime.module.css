@@ -1,0 +1,22 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-5);
+}
+
+.section {
+  border-bottom: 1px solid var(--line);
+  padding-bottom: var(--s-2);
+  margin-top: var(--s-3);
+}
+
+.section h3 {
+  font-size: var(--text-lg);
+  color: var(--pine-deep);
+}
+
+.section p {
+  color: var(--ink-soft);
+  font-size: var(--text-sm);
+  margin-top: var(--s-1);
+}

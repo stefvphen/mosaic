@@ -1,0 +1,69 @@
+.hero {
+  padding-block: var(--s-8) var(--s-7);
+  background:
+    radial-gradient(50rem 24rem at 85% -30%, var(--pine-tint), transparent),
+    radial-gradient(36rem 18rem at 0% 130%, var(--gold-tint), transparent);
+  border-bottom: 1px solid var(--line);
+}
+
+.heroMark {
+  font-size: var(--text-3xl);
+  margin-bottom: var(--s-4);
+}
+
+.heroTitle {
+  font-family: var(--font-display, inherit);
+  font-weight: 500;
+  font-size: clamp(1.9rem, 4.5vw, 3.1rem);
+  letter-spacing: -0.015em;
+  max-inline-size: 22ch;
+}
+
+.heroSubtitle {
+  margin-top: var(--s-3);
+  color: var(--ink-soft);
+  font-size: var(--text-lg);
+  max-inline-size: 48ch;
+}
+
+.grid {
+  list-style: none;
+  padding: 0;
+  margin-top: var(--s-4);
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr));
+  gap: var(--s-4);
+}
+
+.cardLink {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+  height: 100%;
+}
+
+.cardLink:hover article {
+  border-color: var(--pine);
+  box-shadow: var(--shadow-md);
+}
+
+.cardLink article {
+  height: 100%;
+  transition: border-color 120ms ease, box-shadow 120ms ease;
+}
+
+.cardBody {
+  padding: var(--s-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-2);
+}
+
+.cardBody h3 {
+  font-size: var(--text-lg);
+}
+
+.cardMeta {
+  color: var(--ink-soft);
+  font-size: var(--text-sm);
+}

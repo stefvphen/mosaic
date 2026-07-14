@@ -1,0 +1,16 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-5);
+  max-inline-size: 40rem;
+}
+
+.addRow {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--s-3);
+}
+
+.addRow > :first-child {
+  flex: 1;
+}

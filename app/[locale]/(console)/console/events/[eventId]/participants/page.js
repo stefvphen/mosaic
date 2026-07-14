@@ -1,0 +1,42 @@
+import { setRequestLocale } from 'next-intl/server'
+import { getSupabaseServerClient } from '@/lib/supabase/server'
+import { ParticipantsTable } from './ParticipantsTable'
+
+export const dynamic = 'force-dynamic'
+
+export default async function ParticipantsPage({ params }) {
+  const { locale, eventId } = await params
+  setRequestLocale(locale)
+
+  const supabase = await getSupabaseServerClient()
+  const [{ data: types }, { data: versions }] = await Promise.all([
+    supabase
+      .from('participant_types')
+      .select('id, key, name')
+      .eq('event_id', eventId)
+      .order('sort_order'),
+    // All form versions ever used by this event's participants → union of questions.
+    supabase
+      .from('form_versions')
+      .select('id, definition, forms!inner ( event_id )')
+      .eq('forms.event_id', eventId),
+  ])
+
+  // Union of questions across versions, keyed by stable question id.
+  const questionById = new Map()
+  for (const v of versions ?? []) {
+    for (const q of v.definition?.questions ?? []) {
+      if (q.type !== 'section' && !questionById.has(q.id)) {
+        questionById.set(q.id, q)
+      }
+    }
+  }
+
+  return (
+    <ParticipantsTable
+      eventId={eventId}
+      participantTypes={types ?? []}
+      questions={[...questionById.values()]}
+    />
+  )
+}

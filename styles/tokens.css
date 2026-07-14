@@ -1,0 +1,91 @@
+/* Mosaic design tokens. Every component derives from these. */
+:root {
+  /* Palette */
+  --paper: #faf9f6;
+  --surface: #ffffff;
+  --surface-sunken: #f1efe9;
+  --ink: #20242b;
+  --ink-soft: #4d5560;
+  --ink-faint: #8a9099;
+  --line: #e3e0d8;
+  --line-strong: #c9c5ba;
+
+  --pine: #146b5c;
+  --pine-deep: #0e5044;
+  --pine-tint: #e2efec;
+  --gold: #e8a33d;
+  --gold-deep: #b57717;
+  --gold-tint: #fbf0dc;
+  --coral: #e2725b;
+  --sky: #3d7ea6;
+
+  --danger: #b4423a;
+  --danger-tint: #f9e9e7;
+  --success: #2e7d4f;
+  --success-tint: #e6f2ea;
+  --warn: #9a6b0f;
+  --warn-tint: #f8efd8;
+
+  /* Type — families injected by next/font as --font-display / --font-body */
+  --text-xs: 0.75rem;
+  --text-sm: 0.875rem;
+  --text-md: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.375rem;
+  --text-2xl: 1.75rem;
+  --text-3xl: 2.375rem;
+
+  /* Space (4px base) */
+  --s-1: 0.25rem;
+  --s-2: 0.5rem;
+  --s-3: 0.75rem;
+  --s-4: 1rem;
+  --s-5: 1.5rem;
+  --s-6: 2rem;
+  --s-7: 3rem;
+  --s-8: 4rem;
+
+  /* Shape & elevation */
+  --r-sm: 6px;
+  --r-md: 10px;
+  --r-lg: 16px;
+  --shadow-sm: 0 1px 2px rgba(32, 36, 43, 0.06);
+  --shadow-md: 0 2px 8px rgba(32, 36, 43, 0.08), 0 1px 2px rgba(32, 36, 43, 0.05);
+  --shadow-lg: 0 8px 28px rgba(32, 36, 43, 0.14);
+
+  --focus-ring: 0 0 0 3px color-mix(in srgb, var(--gold) 55%, transparent);
+
+  --container: 72rem;
+  --container-narrow: 44rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #17191e;
+    --surface: #1f232a;
+    --surface-sunken: #14161b;
+    --ink: #eceae4;
+    --ink-soft: #b4b0a6;
+    --ink-faint: #7e7a71;
+    --line: #33373f;
+    --line-strong: #4a4f59;
+
+    --pine: #3ba58f;
+    --pine-deep: #52bda6;
+    --pine-tint: #1c2f2b;
+    --gold: #e8a33d;
+    --gold-deep: #f0b95f;
+    --gold-tint: #322a1a;
+
+    --danger: #d9756c;
+    --danger-tint: #35211f;
+    --success: #5cae7f;
+    --success-tint: #1d2f24;
+    --warn: #d3a944;
+    --warn-tint: #322b18;
+
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.45);
+    --shadow-lg: 0 8px 28px rgba(0, 0, 0, 0.55);
+  }
+}
