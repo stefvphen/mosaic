@@ -249,7 +249,13 @@
     "joinEventsHelp": "Request access to events run by others; the event's team or an administrator will approve it.",
     "noMyEvents": "You haven't created or joined any events yet. Create your first event to get started.",
     "joinEventsEmpty": "There are no other events to join right now.",
-    "joinEventsAllAccess": "You already have full access to every event."
+    "joinEventsAllAccess": "You already have full access to every event.",
+    "joinByCode": "Have an event code?",
+    "joinByCodeHelp": "Enter an event's code to request access — it works even for events that aren't published yet.",
+    "eventCode": "Event code",
+    "eventCodeHelp": "Share this code so people can request to join this event.",
+    "copy": "Copy",
+    "copied": "Copied"
   },
   "questionTypes": {
     "text": "Short text",

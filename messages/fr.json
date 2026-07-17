@@ -249,7 +249,13 @@
     "joinEventsHelp": "Demandez l'accès à des événements organisés par d'autres ; l'équipe de l'événement ou un administrateur approuvera la demande.",
     "noMyEvents": "Vous n'avez encore créé ou rejoint aucun événement. Créez votre premier événement pour commencer.",
     "joinEventsEmpty": "Aucun autre événement à rejoindre pour le moment.",
-    "joinEventsAllAccess": "Vous avez déjà un accès complet à tous les événements."
+    "joinEventsAllAccess": "Vous avez déjà un accès complet à tous les événements.",
+    "joinByCode": "Vous avez un code d'événement ?",
+    "joinByCodeHelp": "Saisissez le code d'un événement pour demander l'accès — cela fonctionne même pour les événements pas encore publiés.",
+    "eventCode": "Code de l'événement",
+    "eventCodeHelp": "Partagez ce code pour que d'autres puissent demander à rejoindre cet événement.",
+    "copy": "Copier",
+    "copied": "Copié"
   },
   "questionTypes": {
     "text": "Texte court",

@@ -6,7 +6,7 @@ import { useRouter } from '@/lib/i18n/navigation'
 import { getSupabaseBrowserClient } from '@/lib/supabase/client'
 import { lt } from '@/lib/i18n/locales'
 import { formatEventDateRange } from '@/lib/dates'
-import { Badge, Button } from '@/components/ui'
+import { Badge, Button, Field, Input } from '@/components/ui'
 
 /**
  * Published events the user isn't part of: request access to join the
@@ -20,6 +20,7 @@ export function JoinEvents({ events, requestedEventIds, allAccess = false }) {
   const supabase = getSupabaseBrowserClient()
   const [error, setError] = useState(null)
   const [busyId, setBusyId] = useState(null)
+  const [code, setCode] = useState('')
   const requested = new Set(requestedEventIds)
 
   async function run(eventId, promise) {
@@ -44,6 +45,21 @@ export function JoinEvents({ events, requestedEventIds, allAccess = false }) {
         .eq('event_id', eventId)
         .eq('status', 'requested')
     )
+  }
+
+  async function requestByCode(e) {
+    e.preventDefault()
+    setError(null)
+    setBusyId('code')
+    const { error } = await supabase.rpc('request_event_access_by_slug', {
+      p_slug: code,
+    })
+    setBusyId(null)
+    if (error) setError(error.message)
+    else {
+      setCode('')
+      router.refresh()
+    }
   }
 
   return (
@@ -98,6 +114,30 @@ export function JoinEvents({ events, requestedEventIds, allAccess = false }) {
           </tbody>
         </table>
       </div>
+      )}
+
+      {!allAccess && (
+        <form
+          onSubmit={requestByCode}
+          style={{ display: 'flex', alignItems: 'flex-end', gap: 'var(--s-3)', marginBlockStart: 'var(--s-4)', maxInlineSize: '28rem' }}
+        >
+          <div style={{ flex: 1 }}>
+            <Field label={t('joinByCode')} help={t('joinByCodeHelp')}>
+              {({ id, describedBy }) => (
+                <Input
+                  id={id}
+                  aria-describedby={describedBy}
+                  value={code}
+                  onChange={(e) => setCode(e.target.value)}
+                  placeholder="summer-conference-2026"
+                />
+              )}
+            </Field>
+          </div>
+          <Button type="submit" disabled={!code.trim() || busyId === 'code'}>
+            {t('requestAccess')}
+          </Button>
+        </form>
       )}
     </section>
   )
