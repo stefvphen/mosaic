@@ -6,6 +6,36 @@ import { formatEventDate, formatEventDateRange } from '@/lib/dates'
 import { eventMediaUrl } from '@/lib/storage'
 import styles from './event-page-view.module.css'
 
+// Style options shared with the console editor.
+export const HEADING_SIZES = {
+  sm: '1.25rem',
+  md: '1.75rem',
+  lg: '2.375rem',
+  xl: '3rem',
+}
+
+export const TITLE_SIZES = {
+  sm: '1.6rem',
+  md: 'clamp(2rem, 5vw, 3rem)',
+  lg: 'clamp(2.5rem, 6vw, 3.75rem)',
+  xl: 'clamp(3rem, 7vw, 4.5rem)',
+}
+
+export const FONT_FAMILIES = {
+  default: null, // inherit the site's display font
+  sans: 'var(--font-body), system-ui, sans-serif',
+  serif: 'Georgia, "Times New Roman", serif',
+  mono: 'ui-monospace, "SF Mono", Menlo, monospace',
+}
+
+function textStyle(hs = {}, sizes = HEADING_SIZES) {
+  const style = {}
+  if (hs.color) style.color = hs.color
+  if (hs.size && sizes[hs.size]) style.fontSize = sizes[hs.size]
+  if (hs.font && FONT_FAMILIES[hs.font]) style.fontFamily = FONT_FAMILIES[hs.font]
+  return style
+}
+
 function PencilIcon() {
   return (
     <svg viewBox="0 0 20 20" width="14" height="14" fill="none" aria-hidden="true">
@@ -31,13 +61,14 @@ export function EventPageView({ event, locale, registerHref, editable = false, o
 
   const L = (map) => lt(map, locale, dl)
 
+  const theme = content.theme ?? {}
   const about = content.about ?? {}
   const speakers = content.speakers ?? {}
   const agenda = content.agenda ?? {}
   const tickets = content.tickets ?? {}
   const showAbout = about.enabled && (L(about.body) || about.image_path || about.stats?.length)
   const showSpeakers = speakers.enabled && speakers.items?.length > 0
-  const showAgenda = agenda.enabled && agenda.items?.length > 0
+  const showAgenda = agenda.enabled && (agenda.items?.length > 0 || agenda.image_path)
   const showTickets = tickets.enabled && tickets.items?.length > 0
 
   const now = Date.now()
@@ -52,6 +83,15 @@ export function EventPageView({ event, locale, registerHref, editable = false, o
   const location = L(event.location)
   const contact = event.contact ?? {}
   const hasContact = contact.name || contact.email || contact.phone || contact.website
+
+  const pageStyle = {}
+  if (theme.page_bg) pageStyle['--ep-bg'] = theme.page_bg
+  if (theme.text_color) pageStyle['--ep-text'] = theme.text_color
+
+  const titleStyle = textStyle(
+    { color: theme.title_color, size: theme.title_size, font: theme.title_font },
+    TITLE_SIZES
+  )
 
   function Section({ id, section, className, children }) {
     return (
@@ -72,8 +112,19 @@ export function EventPageView({ event, locale, registerHref, editable = false, o
     )
   }
 
-  function RegisterButton({ large }) {
-    const cls = `btn ${large ? 'btn-lg' : ''} ${styles.registerBtn}`
+  function Heading({ sectionData, fallback, centered }) {
+    return (
+      <h2
+        className={`${styles.sectionTitle} ${centered ? styles.centered : ''}`}
+        style={textStyle(sectionData.heading_style)}
+      >
+        {L(sectionData.heading) || fallback}
+      </h2>
+    )
+  }
+
+  function RegisterButton() {
+    const cls = `btn ${styles.registerBtn}`
     if (editable) {
       return (
         <span className={cls} aria-disabled="true">
@@ -89,7 +140,12 @@ export function EventPageView({ event, locale, registerHref, editable = false, o
   }
 
   return (
-    <div className={styles.page}>
+    <div
+      className={styles.page}
+      style={pageStyle}
+      data-custom-bg={theme.page_bg ? '' : undefined}
+      data-custom-text={theme.text_color ? '' : undefined}
+    >
       {/* ---- Hero ---- */}
       <Section section="hero" className={styles.hero}>
         {coverUrl && (
@@ -103,7 +159,9 @@ export function EventPageView({ event, locale, registerHref, editable = false, o
             {formatEventDateRange(event.starts_at, event.ends_at, event.timezone, locale)}
             {location ? ` · ${location}` : ''}
           </span>
-          <h1 className={styles.heroTitle}>{name}</h1>
+          <h1 className={styles.heroTitle} style={titleStyle}>
+            {name}
+          </h1>
           {description && <p className={styles.heroDescription}>{description}</p>}
           <div className={styles.heroActions}>
             {closed ? (
@@ -131,7 +189,7 @@ export function EventPageView({ event, locale, registerHref, editable = false, o
         <Section section="about" className={styles.about}>
           <div className={`container ${styles.aboutGrid}`}>
             <div className={styles.aboutText}>
-              <h2 className={styles.sectionTitle}>{L(about.heading) || t('aboutDefault')}</h2>
+              <Heading sectionData={about} fallback={t('aboutDefault')} />
               {L(about.body) && <p className={styles.aboutBody}>{L(about.body)}</p>}
               {about.stats?.length > 0 && (
                 <div className={styles.stats}>
@@ -158,8 +216,7 @@ export function EventPageView({ event, locale, registerHref, editable = false, o
       {showSpeakers && (
         <Section section="speakers" className={styles.speakers}>
           <div className="container">
-            <p className={styles.kicker}>{t('speakersKicker')}</p>
-            <h2 className={styles.sectionTitle}>{L(speakers.heading) || t('speakersDefault')}</h2>
+            <Heading sectionData={speakers} fallback={t('speakersDefault')} />
             <div className={styles.speakerGrid}>
               {speakers.items.map((sp) => (
                 <div key={sp.id} className={styles.speakerCard}>
@@ -187,21 +244,27 @@ export function EventPageView({ event, locale, registerHref, editable = false, o
       {showAgenda && (
         <Section id="agenda" section="agenda" className={styles.agenda}>
           <div className="container-narrow">
-            <h2 className={`${styles.sectionTitle} ${styles.centered}`}>
-              {L(agenda.heading) || t('agendaDefault')}
-            </h2>
-            <ol className={styles.agendaList}>
-              {agenda.items.map((item) => (
-                <li key={item.id} className={styles.agendaItem}>
-                  <div className={styles.agendaMarker} aria-hidden="true" />
-                  <div className={styles.agendaBody}>
-                    <h3>{L(item.title)}</h3>
-                    {L(item.time) && <p className={styles.agendaTime}>{L(item.time)}</p>}
-                    {L(item.description) && <p>{L(item.description)}</p>}
-                  </div>
-                </li>
-              ))}
-            </ol>
+            <Heading sectionData={agenda} fallback={t('agendaDefault')} centered />
+            {agenda.image_path && (
+              <div className={styles.agendaMedia}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={eventMediaUrl(agenda.image_path)} alt="" />
+              </div>
+            )}
+            {agenda.items?.length > 0 && (
+              <ol className={styles.agendaList}>
+                {agenda.items.map((item) => (
+                  <li key={item.id} className={styles.agendaItem}>
+                    <div className={styles.agendaMarker} aria-hidden="true" />
+                    <div className={styles.agendaBody}>
+                      <h3>{L(item.title)}</h3>
+                      {L(item.time) && <p className={styles.agendaTime}>{L(item.time)}</p>}
+                      {L(item.description) && <p>{L(item.description)}</p>}
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            )}
           </div>
         </Section>
       )}
@@ -210,31 +273,36 @@ export function EventPageView({ event, locale, registerHref, editable = false, o
       {showTickets && (
         <Section id="tickets" section="tickets" className={styles.tickets}>
           <div className="container">
-            <h2 className={`${styles.sectionTitle} ${styles.centered}`}>
-              {L(tickets.heading) || t('ticketsDefault')}
-            </h2>
+            <Heading sectionData={tickets} fallback={t('ticketsDefault')} centered />
             <div className={styles.tierGrid}>
-              {tickets.items.map((tier) => (
-                <div
-                  key={tier.id}
-                  className={`${styles.tier} ${tier.highlighted ? styles.tierHighlight : ''}`}
-                >
-                  {L(tier.badge) && <span className={styles.tierBadge}>{L(tier.badge)}</span>}
-                  <span className={styles.tierName}>{L(tier.name)}</span>
-                  <span className={styles.tierPrice}>{tier.price}</span>
-                  {L(tier.features) && (
-                    <ul className={styles.tierFeatures}>
-                      {L(tier.features)
-                        .split('\n')
-                        .filter((f) => f.trim())
-                        .map((f, i) => (
-                          <li key={i}>{f}</li>
-                        ))}
-                    </ul>
-                  )}
-                  {!closed && !notOpenYet && <RegisterButton />}
-                </div>
-              ))}
+              {tickets.items.map((tier) => {
+                const highlightStyle =
+                  tier.highlighted && tickets.highlight_color
+                    ? { background: tickets.highlight_color, borderColor: tickets.highlight_color }
+                    : undefined
+                return (
+                  <div
+                    key={tier.id}
+                    className={`${styles.tier} ${tier.highlighted ? styles.tierHighlight : ''}`}
+                    style={highlightStyle}
+                  >
+                    {L(tier.badge) && <span className={styles.tierBadge}>{L(tier.badge)}</span>}
+                    <span className={styles.tierName}>{L(tier.name)}</span>
+                    <span className={styles.tierPrice}>{tier.price}</span>
+                    {L(tier.features) && (
+                      <ul className={styles.tierFeatures}>
+                        {L(tier.features)
+                          .split('\n')
+                          .filter((f) => f.trim())
+                          .map((f, i) => (
+                            <li key={i}>{f}</li>
+                          ))}
+                      </ul>
+                    )}
+                    {!closed && !notOpenYet && <RegisterButton />}
+                  </div>
+                )
+              })}
             </div>
           </div>
         </Section>

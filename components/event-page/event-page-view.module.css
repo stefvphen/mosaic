@@ -1,6 +1,43 @@
 .page {
   display: flow-root;
-  background: var(--paper);
+  background: var(--ep-bg, var(--paper));
+  color: var(--ep-text, var(--ink));
+}
+
+/* When the organizer picks custom page colors, section backgrounds and
+   muted text tones step aside so the chosen colors win everywhere. */
+.page[data-custom-bg] .about,
+.page[data-custom-bg] .agenda,
+.page[data-custom-bg] .tickets {
+  background: transparent;
+}
+
+.page[data-custom-bg] .stat {
+  background: color-mix(in srgb, var(--ep-text, var(--ink)) 6%, transparent);
+  border-color: color-mix(in srgb, var(--ep-text, var(--ink)) 18%, transparent);
+}
+
+.page[data-custom-text] .sectionTitle,
+.page[data-custom-text] .agendaBody h3 {
+  color: inherit;
+}
+
+.page[data-custom-text] .aboutBody,
+.page[data-custom-text] .agendaBody p,
+.page[data-custom-text] .contactList,
+.page[data-custom-text] .speakerOrg,
+.page[data-custom-text] .agendaTime {
+  color: inherit;
+  opacity: 0.75;
+}
+
+.page[data-custom-text] .stat span {
+  color: inherit;
+  opacity: 0.7;
+}
+
+.page[data-custom-text] .stat strong {
+  color: inherit;
 }
 
 .sectionTitle {
@@ -251,6 +288,16 @@
 .agenda {
   padding-block: var(--s-8);
   background: var(--surface);
+}
+
+.agendaMedia {
+  margin-top: var(--s-5);
+}
+
+.agendaMedia img {
+  width: 100%;
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-md);
 }
 
 .agendaList {

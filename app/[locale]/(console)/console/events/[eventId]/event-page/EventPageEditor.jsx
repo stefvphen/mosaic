@@ -6,11 +6,13 @@ import { useRouter } from '@/lib/i18n/navigation'
 import { getSupabaseBrowserClient } from '@/lib/supabase/client'
 import { LOCALES, LOCALE_NAMES } from '@/lib/i18n/locales'
 import { eventMediaUrl } from '@/lib/storage'
-import { Button, CheckboxRow, Field, Input, Textarea } from '@/components/ui'
+import { Button, CheckboxRow, Field, Input, NativeSelect, Textarea } from '@/components/ui'
 import { EventPageView } from '@/components/event-page/EventPageView'
 import styles from './event-page.module.css'
 
-const SECTIONS = ['basics', 'hero', 'about', 'speakers', 'agenda', 'tickets', 'contact']
+const SECTIONS = ['theme', 'basics', 'hero', 'about', 'speakers', 'agenda', 'tickets', 'contact']
+const SIZE_OPTIONS = ['', 'sm', 'md', 'lg', 'xl']
+const FONT_OPTIONS = ['default', 'sans', 'serif', 'mono']
 
 function newId() {
   return Math.random().toString(36).slice(2, 10)
@@ -33,6 +35,7 @@ export function EventPageEditor({ initialEvent }) {
   const [copied, setCopied] = useState(false)
   const coverInputRef = useRef(null)
   const aboutImgInputRef = useRef(null)
+  const agendaImgInputRef = useRef(null)
   const speakerInputRef = useRef(null)
   const speakerUploadTarget = useRef(null)
 
@@ -142,6 +145,15 @@ export function EventPageEditor({ initialEvent }) {
     e.target.value = ''
   }
 
+  async function onAgendaImgFile(e) {
+    const file = e.target.files?.[0]
+    if (file) {
+      const path = await upload(file, 'agenda')
+      if (path) patchContent('agenda', { image_path: path })
+    }
+    e.target.value = ''
+  }
+
   async function onSpeakerFile(e) {
     const file = e.target.files?.[0]
     const id = speakerUploadTarget.current
@@ -163,6 +175,115 @@ export function EventPageEditor({ initialEvent }) {
   }
 
   // ---- panel section editors ----------------------------------------------
+
+  function ColorField({ label, value, defaultValue, onChange }) {
+    return (
+      <div className={styles.colorField}>
+        <span className="field-label">{label}</span>
+        <div className={styles.panelRow}>
+          <input
+            type="color"
+            className={styles.colorInput}
+            value={value || defaultValue}
+            onChange={(e) => onChange(e.target.value)}
+          />
+          {value && (
+            <Button variant="ghost" size="sm" onClick={() => onChange(null)}>
+              {t('resetColor')}
+            </Button>
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  function StyleSelects({ style = {}, onChange }) {
+    return (
+      <div className={styles.panelRow}>
+        <NativeSelect
+          value={style.size ?? ''}
+          onChange={(e) => onChange({ ...style, size: e.target.value || undefined })}
+          aria-label={t('fontSize')}
+        >
+          {SIZE_OPTIONS.map((s) => (
+            <option key={s} value={s}>
+              {s === '' ? t('sizeDefault') : t(`size_${s}`)}
+            </option>
+          ))}
+        </NativeSelect>
+        <NativeSelect
+          value={style.font ?? 'default'}
+          onChange={(e) => onChange({ ...style, font: e.target.value === 'default' ? undefined : e.target.value })}
+          aria-label={t('fontFamily')}
+        >
+          {FONT_OPTIONS.map((f) => (
+            <option key={f} value={f}>
+              {t(`font_${f}`)}
+            </option>
+          ))}
+        </NativeSelect>
+      </div>
+    )
+  }
+
+  function HeadingStyleEditor({ section, defaultHeading }) {
+    const data = content[section] ?? {}
+    const hs = data.heading_style ?? {}
+    const setStyle = (next) => patchContent(section, { heading_style: next })
+    return (
+      <div className={styles.headingEditor}>
+        <Field label={`${t('heading')} (${previewLocale})`}>
+          {({ id }) => (
+            <Input
+              id={id}
+              placeholder={defaultHeading}
+              value={lv(data.heading)}
+              onChange={(e) => patchContent(section, { heading: setLv(data.heading, e.target.value) })}
+            />
+          )}
+        </Field>
+        <StyleSelects style={hs} onChange={setStyle} />
+        <ColorField
+          label={t('headingColor')}
+          value={hs.color}
+          defaultValue="#20242b"
+          onChange={(color) => setStyle({ ...hs, color: color ?? undefined })}
+        />
+      </div>
+    )
+  }
+
+  function renderTheme() {
+    const theme = content.theme ?? {}
+    const setTheme = (patch) => patchContent('theme', patch)
+    return (
+      <>
+        <ColorField
+          label={t('pageBackground')}
+          value={theme.page_bg}
+          defaultValue="#faf9f6"
+          onChange={(c) => setTheme({ page_bg: c ?? undefined })}
+        />
+        <ColorField
+          label={t('textColor')}
+          value={theme.text_color}
+          defaultValue="#20242b"
+          onChange={(c) => setTheme({ text_color: c ?? undefined })}
+        />
+        <h4 className={styles.panelSubhead}>{t('heroTitleStyle')}</h4>
+        <ColorField
+          label={t('titleColor')}
+          value={theme.title_color}
+          defaultValue="#ffffff"
+          onChange={(c) => setTheme({ title_color: c ?? undefined })}
+        />
+        <StyleSelects
+          style={{ size: theme.title_size, font: theme.title_font }}
+          onChange={(s) => setTheme({ title_size: s.size, title_font: s.font })}
+        />
+      </>
+    )
+  }
 
   function SectionHeader({ section, toggleable }) {
     return (
@@ -246,15 +367,7 @@ export function EventPageEditor({ initialEvent }) {
     return (
       <>
         <SectionHeader section="about" toggleable />
-        <Field label={`${t('heading')} (${previewLocale})`}>
-          {({ id }) => (
-            <Input
-              id={id}
-              value={lv(about.heading)}
-              onChange={(e) => patchContent('about', { heading: setLv(about.heading, e.target.value) })}
-            />
-          )}
-        </Field>
+        <HeadingStyleEditor section="about" defaultHeading={t('section_about')} />
         <Field label={`${t('body')} (${previewLocale})`}>
           {({ id }) => (
             <Textarea
@@ -333,6 +446,7 @@ export function EventPageEditor({ initialEvent }) {
     return (
       <>
         <SectionHeader section="speakers" toggleable />
+        <HeadingStyleEditor section="speakers" defaultHeading={t('section_speakers')} />
         <input ref={speakerInputRef} type="file" accept="image/*" hidden onChange={onSpeakerFile} />
         {items.map((sp) => (
           <div key={sp.id} className={styles.panelItem}>
@@ -384,10 +498,27 @@ export function EventPageEditor({ initialEvent }) {
   }
 
   function renderAgenda() {
-    const items = content.agenda?.items ?? []
+    const agenda = content.agenda ?? {}
+    const items = agenda.items ?? []
     return (
       <>
         <SectionHeader section="agenda" toggleable />
+        <HeadingStyleEditor section="agenda" defaultHeading={t('section_agenda')} />
+        <input ref={agendaImgInputRef} type="file" accept="image/*" hidden onChange={onAgendaImgFile} />
+        {agenda.image_path && (
+          /* eslint-disable-next-line @next/next/no-img-element */
+          <img className={styles.panelThumb} src={eventMediaUrl(agenda.image_path)} alt="" />
+        )}
+        <div className={styles.panelRow}>
+          <Button variant="secondary" size="sm" onClick={() => agendaImgInputRef.current?.click()}>
+            {agenda.image_path ? t('changeImage') : t('uploadImage')}
+          </Button>
+          {agenda.image_path && (
+            <Button variant="ghost" size="sm" onClick={() => patchContent('agenda', { image_path: null })}>
+              {t('remove')}
+            </Button>
+          )}
+        </div>
         {items.map((it) => (
           <div key={it.id} className={styles.panelItem}>
             <div className={styles.panelItemFields}>
@@ -427,10 +558,18 @@ export function EventPageEditor({ initialEvent }) {
   }
 
   function renderTickets() {
-    const items = content.tickets?.items ?? []
+    const tickets = content.tickets ?? {}
+    const items = tickets.items ?? []
     return (
       <>
         <SectionHeader section="tickets" toggleable />
+        <HeadingStyleEditor section="tickets" defaultHeading={t('section_tickets')} />
+        <ColorField
+          label={t('highlightColor')}
+          value={tickets.highlight_color}
+          defaultValue="#0e5044"
+          onChange={(c) => patchContent('tickets', { highlight_color: c ?? undefined })}
+        />
         {items.map((tier) => (
           <div key={tier.id} className={styles.panelItem}>
             <div className={styles.panelItemFields}>
@@ -510,6 +649,7 @@ export function EventPageEditor({ initialEvent }) {
   }
 
   const sectionRenderers = {
+    theme: renderTheme,
     basics: renderBasics,
     hero: renderHero,
     about: renderAbout,
@@ -541,7 +681,7 @@ export function EventPageEditor({ initialEvent }) {
           <p className={`alert alert-info ${styles.draftNote}`}>{t('draftNote')}</p>
         )}
         <div className={styles.previewBar}>
-          <Button onClick={() => setPanelSection(panelSection ? null : 'basics')}>
+          <Button onClick={() => setPanelSection(panelSection ? null : 'theme')}>
             {t('customize')}
           </Button>
           <p className={styles.hint}>{t('previewHint')}</p>
