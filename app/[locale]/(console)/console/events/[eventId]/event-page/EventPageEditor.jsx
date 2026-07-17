@@ -2,137 +2,153 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
-import { Link } from '@/lib/i18n/navigation'
+import { useRouter } from '@/lib/i18n/navigation'
 import { getSupabaseBrowserClient } from '@/lib/supabase/client'
-import { lt, LOCALES, LOCALE_NAMES } from '@/lib/i18n/locales'
-import { formatEventDate, formatEventDateRange } from '@/lib/dates'
-import { Button } from '@/components/ui'
-import publicStyles from '@/app/[locale]/(public)/events/[slug]/event.module.css'
+import { LOCALES, LOCALE_NAMES } from '@/lib/i18n/locales'
+import { eventMediaUrl } from '@/lib/storage'
+import { Button, CheckboxRow, Field, Input, Textarea } from '@/components/ui'
+import { EventPageView } from '@/components/event-page/EventPageView'
 import styles from './event-page.module.css'
 
-function PencilIcon() {
-  return (
-    <svg viewBox="0 0 20 20" width="14" height="14" fill="none" aria-hidden="true">
-      <path
-        d="M13.6 2.9a1.8 1.8 0 0 1 2.5 2.5l-8.9 8.9-3.4.9.9-3.4 8.9-8.9Z"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  )
-}
+const SECTIONS = ['basics', 'hero', 'about', 'speakers', 'agenda', 'tickets', 'contact']
 
-/**
- * Wraps a rendered region of the public page. Shows a transparent pencil on
- * hover; clicking switches the region into inline editing (renderEdit).
- */
-function Editable({ label, editing, onStart, children, renderEdit }) {
-  if (editing) return <div className={styles.editing}>{renderEdit()}</div>
-  return (
-    <div className={styles.editable}>
-      {children}
-      <button
-        type="button"
-        className={styles.pencil}
-        aria-label={label}
-        title={label}
-        onClick={onStart}
-      >
-        <PencilIcon />
-      </button>
-    </div>
-  )
+function newId() {
+  return Math.random().toString(36).slice(2, 10)
 }
 
 export function EventPageEditor({ initialEvent }) {
   const t = useTranslations('console')
-  const tEvent = useTranslations('event')
   const uiLocale = useLocale()
+  const router = useRouter()
   const supabase = getSupabaseBrowserClient()
 
-  const [event, setEvent] = useState(initialEvent)
+  const [event, setEvent] = useState({ page_content: {}, ...initialEvent })
   const [previewLocale, setPreviewLocale] = useState(
     LOCALES.includes(uiLocale) ? uiLocale : initialEvent.default_locale
   )
-  const [editingField, setEditingField] = useState(null) // 'name' | 'description' | 'location' | 'contact'
-  const [draftValue, setDraftValue] = useState('')
-  const [draftContact, setDraftContact] = useState({})
-  const [saveState, setSaveState] = useState('idle') // idle | saving | saved | error
+  const [panelSection, setPanelSection] = useState(null) // null = closed
+  const [dirty, setDirty] = useState(false)
+  const [saveState, setSaveState] = useState('idle')
   const [origin, setOrigin] = useState('')
   const [copied, setCopied] = useState(false)
-  const fileInputRef = useRef(null)
+  const coverInputRef = useRef(null)
+  const aboutImgInputRef = useRef(null)
+  const speakerInputRef = useRef(null)
+  const speakerUploadTarget = useRef(null)
 
   useEffect(() => {
     setOrigin(window.location.origin)
   }, [])
 
   const publicUrl = `${origin}/${previewLocale}/events/${event.slug}`
+  const content = event.page_content ?? {}
 
-  async function persist(patch) {
-    setSaveState('saving')
-    const { error } = await supabase.from('events').update(patch).eq('id', event.id)
-    if (error) {
-      setSaveState('error')
-    } else {
-      setEvent((prev) => ({ ...prev, ...patch }))
-      setSaveState('saved')
-    }
-    return !error
-  }
+  // ---- state helpers -------------------------------------------------------
 
-  function startEdit(field) {
-    if (field === 'contact') {
-      setDraftContact(event.contact ?? {})
-    } else {
-      // Edit the raw value for the previewed locale (not the fallback).
-      setDraftValue(event[field]?.[previewLocale] ?? '')
-    }
-    setEditingField(field)
-  }
-
-  async function saveLocalized(field) {
-    const value = { ...(event[field] ?? {}), [previewLocale]: draftValue }
-    const patch = { [field]: value }
-    if (field === 'name') {
-      patch.supported_locales = LOCALES.filter((l) => (value[l] ?? '').trim() !== '')
-    }
-    if (await persist(patch)) setEditingField(null)
-  }
-
-  async function saveContact() {
-    if (await persist({ contact: draftContact })) setEditingField(null)
-  }
-
-  function cancelEdit() {
-    setEditingField(null)
+  function patchEvent(patch) {
+    setEvent((prev) => ({ ...prev, ...patch }))
+    setDirty(true)
     setSaveState('idle')
   }
 
-  function onTextKeyDown(e, field) {
-    if (e.key === 'Enter' && field !== 'description') {
-      e.preventDefault()
-      saveLocalized(field)
-    }
-    if (e.key === 'Escape') cancelEdit()
+  function patchContent(section, patch) {
+    patchEvent({
+      page_content: {
+        ...content,
+        [section]: { ...(content[section] ?? {}), ...patch },
+      },
+    })
   }
 
-  async function uploadCover(e) {
-    const file = e.target.files?.[0]
-    if (!file) return
-    setSaveState('saving')
-    const ext = (file.name.split('.').pop() || 'jpg').toLowerCase()
-    const path = `${event.id}/cover-${Date.now().toString(36)}.${ext}`
-    const { error } = await supabase.storage.from('event-covers').upload(path, file, {
-      cacheControl: '3600',
-      upsert: false,
+  function patchItem(section, id, patch) {
+    const items = content[section]?.items ?? []
+    patchContent(section, {
+      items: items.map((it) => (it.id === id ? { ...it, ...patch } : it)),
     })
+  }
+
+  function addItem(section, item) {
+    const items = content[section]?.items ?? []
+    patchContent(section, { enabled: true, items: [...items, { id: newId(), ...item }] })
+  }
+
+  function removeItem(section, id) {
+    patchContent(section, { items: (content[section]?.items ?? []).filter((it) => it.id !== id) })
+  }
+
+  // Localized value helpers — edit the text for the previewed language.
+  const lv = (map) => map?.[previewLocale] ?? ''
+  const setLv = (map, value) => ({ ...(map ?? {}), [previewLocale]: value })
+
+  // ---- persistence ---------------------------------------------------------
+
+  async function save() {
+    setSaveState('saving')
+    const { error } = await supabase
+      .from('events')
+      .update({
+        name: event.name,
+        description: event.description,
+        location: event.location,
+        contact: event.contact,
+        cover_image_path: event.cover_image_path,
+        page_content: event.page_content,
+        supported_locales: LOCALES.filter((l) => (event.name?.[l] ?? '').trim() !== ''),
+      })
+      .eq('id', event.id)
     if (error) {
       setSaveState('error')
-      return
+    } else {
+      setSaveState('saved')
+      setDirty(false)
+      router.refresh()
     }
-    await persist({ cover_image_path: path })
+  }
+
+  async function setStatus(status) {
+    const { error } = await supabase.from('events').update({ status }).eq('id', event.id)
+    if (!error) {
+      setEvent((prev) => ({ ...prev, status }))
+      router.refresh()
+    }
+  }
+
+  async function upload(file, prefix) {
+    const ext = (file.name.split('.').pop() || 'jpg').toLowerCase()
+    const path = `${event.id}/${prefix}-${Date.now().toString(36)}.${ext}`
+    const { error } = await supabase.storage.from('event-covers').upload(path, file)
+    if (error) {
+      setSaveState('error')
+      return null
+    }
+    return path
+  }
+
+  async function onCoverFile(e) {
+    const file = e.target.files?.[0]
+    if (file) {
+      const path = await upload(file, 'cover')
+      if (path) patchEvent({ cover_image_path: path })
+    }
+    e.target.value = ''
+  }
+
+  async function onAboutImgFile(e) {
+    const file = e.target.files?.[0]
+    if (file) {
+      const path = await upload(file, 'about')
+      if (path) patchContent('about', { image_path: path })
+    }
+    e.target.value = ''
+  }
+
+  async function onSpeakerFile(e) {
+    const file = e.target.files?.[0]
+    const id = speakerUploadTarget.current
+    if (file && id) {
+      const path = await upload(file, `speaker-${id}`)
+      if (path) patchItem('speakers', id, { photo_path: path })
+    }
     e.target.value = ''
   }
 
@@ -142,31 +158,370 @@ export function EventPageEditor({ initialEvent }) {
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     } catch {
-      // Clipboard unavailable — the URL is visible and selectable anyway.
+      // URL is visible and selectable anyway.
     }
   }
 
-  const coverUrl = event.cover_image_path
-    ? `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/event-covers/${event.cover_image_path}`
-    : null
+  // ---- panel section editors ----------------------------------------------
 
-  const now = Date.now()
-  const opensAt = event.registration_opens_at ? Date.parse(event.registration_opens_at) : null
-  const closesAt = event.registration_closes_at ? Date.parse(event.registration_closes_at) : null
-  const notOpenYet = opensAt != null && now < opensAt
-  const closed = closesAt != null && now > closesAt
+  function SectionHeader({ section, toggleable }) {
+    return (
+      <div className={styles.panelSectionHead}>
+        <h3>{t(`section_${section}`)}</h3>
+        {toggleable && (
+          <CheckboxRow
+            label={t('showSection')}
+            checked={!!content[section]?.enabled}
+            onCheckedChange={(checked) => patchContent(section, { enabled: !!checked })}
+          />
+        )}
+      </div>
+    )
+  }
 
-  const name = lt(event.name, previewLocale, event.default_locale)
-  const description = lt(event.description, previewLocale, event.default_locale)
-  const location = lt(event.location, previewLocale, event.default_locale)
-  const contact = event.contact ?? {}
-  const hasContact = contact.name || contact.email || contact.phone || contact.website
+  function renderBasics() {
+    return (
+      <>
+        <Field label={`${t('eventName')} (${previewLocale})`} required>
+          {({ id }) => (
+            <Input
+              id={id}
+              value={lv(event.name)}
+              onChange={(e) => patchEvent({ name: setLv(event.name, e.target.value) })}
+            />
+          )}
+        </Field>
+        <Field label={`${t('description')} (${previewLocale})`} help={t('heroDescriptionHelp')}>
+          {({ id }) => (
+            <Textarea
+              id={id}
+              rows={3}
+              value={lv(event.description)}
+              onChange={(e) => patchEvent({ description: setLv(event.description, e.target.value) })}
+            />
+          )}
+        </Field>
+        <Field label={`${t('location')} (${previewLocale})`}>
+          {({ id }) => (
+            <Input
+              id={id}
+              value={lv(event.location)}
+              onChange={(e) => patchEvent({ location: setLv(event.location, e.target.value) })}
+            />
+          )}
+        </Field>
+      </>
+    )
+  }
 
-  const inputClass = 'input'
+  function renderHero() {
+    return (
+      <>
+        <input ref={coverInputRef} type="file" accept="image/*" hidden onChange={onCoverFile} />
+        {event.cover_image_path && (
+          /* eslint-disable-next-line @next/next/no-img-element */
+          <img
+            className={styles.panelThumb}
+            src={eventMediaUrl(event.cover_image_path)}
+            alt=""
+          />
+        )}
+        <div className={styles.panelRow}>
+          <Button variant="secondary" size="sm" onClick={() => coverInputRef.current?.click()}>
+            {event.cover_image_path ? t('changeImage') : t('uploadImage')}
+          </Button>
+          {event.cover_image_path && (
+            <Button variant="ghost" size="sm" onClick={() => patchEvent({ cover_image_path: null })}>
+              {t('remove')}
+            </Button>
+          )}
+        </div>
+        <p className="field-help">{t('coverHelp')}</p>
+      </>
+    )
+  }
+
+  function renderAbout() {
+    const about = content.about ?? {}
+    return (
+      <>
+        <SectionHeader section="about" toggleable />
+        <Field label={`${t('heading')} (${previewLocale})`}>
+          {({ id }) => (
+            <Input
+              id={id}
+              value={lv(about.heading)}
+              onChange={(e) => patchContent('about', { heading: setLv(about.heading, e.target.value) })}
+            />
+          )}
+        </Field>
+        <Field label={`${t('body')} (${previewLocale})`}>
+          {({ id }) => (
+            <Textarea
+              id={id}
+              rows={6}
+              value={lv(about.body)}
+              onChange={(e) => patchContent('about', { body: setLv(about.body, e.target.value) })}
+            />
+          )}
+        </Field>
+        <input ref={aboutImgInputRef} type="file" accept="image/*" hidden onChange={onAboutImgFile} />
+        {about.image_path && (
+          /* eslint-disable-next-line @next/next/no-img-element */
+          <img className={styles.panelThumb} src={eventMediaUrl(about.image_path)} alt="" />
+        )}
+        <div className={styles.panelRow}>
+          <Button variant="secondary" size="sm" onClick={() => aboutImgInputRef.current?.click()}>
+            {about.image_path ? t('changeImage') : t('uploadImage')}
+          </Button>
+          {about.image_path && (
+            <Button variant="ghost" size="sm" onClick={() => patchContent('about', { image_path: null })}>
+              {t('remove')}
+            </Button>
+          )}
+        </div>
+
+        <h4 className={styles.panelSubhead}>{t('stats')}</h4>
+        {(about.stats ?? []).map((s, i) => (
+          <div key={i} className={styles.panelRow}>
+            <Input
+              placeholder={t('statValue')}
+              value={s.value ?? ''}
+              onChange={(e) =>
+                patchContent('about', {
+                  stats: about.stats.map((x, j) => (j === i ? { ...x, value: e.target.value } : x)),
+                })
+              }
+            />
+            <Input
+              placeholder={`${t('statLabel')} (${previewLocale})`}
+              value={lv(s.label)}
+              onChange={(e) =>
+                patchContent('about', {
+                  stats: about.stats.map((x, j) =>
+                    j === i ? { ...x, label: setLv(x.label, e.target.value) } : x
+                  ),
+                })
+              }
+            />
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() =>
+                patchContent('about', { stats: about.stats.filter((_, j) => j !== i) })
+              }
+            >
+              ✕
+            </Button>
+          </div>
+        ))}
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={() =>
+            patchContent('about', { enabled: true, stats: [...(about.stats ?? []), { value: '', label: {} }] })
+          }
+        >
+          {t('addStat')}
+        </Button>
+      </>
+    )
+  }
+
+  function renderSpeakers() {
+    const items = content.speakers?.items ?? []
+    return (
+      <>
+        <SectionHeader section="speakers" toggleable />
+        <input ref={speakerInputRef} type="file" accept="image/*" hidden onChange={onSpeakerFile} />
+        {items.map((sp) => (
+          <div key={sp.id} className={styles.panelItem}>
+            <div className={styles.panelItemMedia}>
+              {sp.photo_path ? (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img src={eventMediaUrl(sp.photo_path)} alt="" />
+              ) : (
+                <span aria-hidden="true">{sp.name?.charAt(0) || '?'}</span>
+              )}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  speakerUploadTarget.current = sp.id
+                  speakerInputRef.current?.click()
+                }}
+              >
+                {t('photo')}
+              </Button>
+            </div>
+            <div className={styles.panelItemFields}>
+              <Input
+                placeholder={t('speakerName')}
+                value={sp.name ?? ''}
+                onChange={(e) => patchItem('speakers', sp.id, { name: e.target.value })}
+              />
+              <Input
+                placeholder={`${t('speakerRole')} (${previewLocale})`}
+                value={lv(sp.role)}
+                onChange={(e) => patchItem('speakers', sp.id, { role: setLv(sp.role, e.target.value) })}
+              />
+              <Input
+                placeholder={t('speakerOrg')}
+                value={sp.org ?? ''}
+                onChange={(e) => patchItem('speakers', sp.id, { org: e.target.value })}
+              />
+            </div>
+            <Button variant="ghost" size="sm" onClick={() => removeItem('speakers', sp.id)}>
+              ✕
+            </Button>
+          </div>
+        ))}
+        <Button variant="secondary" size="sm" onClick={() => addItem('speakers', { name: '', role: {}, org: '' })}>
+          {t('addSpeaker')}
+        </Button>
+      </>
+    )
+  }
+
+  function renderAgenda() {
+    const items = content.agenda?.items ?? []
+    return (
+      <>
+        <SectionHeader section="agenda" toggleable />
+        {items.map((it) => (
+          <div key={it.id} className={styles.panelItem}>
+            <div className={styles.panelItemFields}>
+              <Input
+                placeholder={`${t('sessionTitle')} (${previewLocale})`}
+                value={lv(it.title)}
+                onChange={(e) => patchItem('agenda', it.id, { title: setLv(it.title, e.target.value) })}
+              />
+              <Input
+                placeholder={`${t('sessionTime')} (${previewLocale})`}
+                value={lv(it.time)}
+                onChange={(e) => patchItem('agenda', it.id, { time: setLv(it.time, e.target.value) })}
+              />
+              <Textarea
+                rows={2}
+                placeholder={`${t('sessionDescription')} (${previewLocale})`}
+                value={lv(it.description)}
+                onChange={(e) =>
+                  patchItem('agenda', it.id, { description: setLv(it.description, e.target.value) })
+                }
+              />
+            </div>
+            <Button variant="ghost" size="sm" onClick={() => removeItem('agenda', it.id)}>
+              ✕
+            </Button>
+          </div>
+        ))}
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={() => addItem('agenda', { title: {}, time: {}, description: {} })}
+        >
+          {t('addSession')}
+        </Button>
+      </>
+    )
+  }
+
+  function renderTickets() {
+    const items = content.tickets?.items ?? []
+    return (
+      <>
+        <SectionHeader section="tickets" toggleable />
+        {items.map((tier) => (
+          <div key={tier.id} className={styles.panelItem}>
+            <div className={styles.panelItemFields}>
+              <div className={styles.panelRow}>
+                <Input
+                  placeholder={`${t('tierName')} (${previewLocale})`}
+                  value={lv(tier.name)}
+                  onChange={(e) => patchItem('tickets', tier.id, { name: setLv(tier.name, e.target.value) })}
+                />
+                <Input
+                  placeholder={t('tierPrice')}
+                  value={tier.price ?? ''}
+                  onChange={(e) => patchItem('tickets', tier.id, { price: e.target.value })}
+                />
+              </div>
+              <Input
+                placeholder={`${t('tierBadge')} (${previewLocale})`}
+                value={lv(tier.badge)}
+                onChange={(e) => patchItem('tickets', tier.id, { badge: setLv(tier.badge, e.target.value) })}
+              />
+              <Textarea
+                rows={3}
+                placeholder={`${t('tierFeatures')} (${previewLocale})`}
+                value={lv(tier.features)}
+                onChange={(e) =>
+                  patchItem('tickets', tier.id, { features: setLv(tier.features, e.target.value) })
+                }
+              />
+              <CheckboxRow
+                label={t('highlightTier')}
+                checked={!!tier.highlighted}
+                onCheckedChange={(checked) => patchItem('tickets', tier.id, { highlighted: !!checked })}
+              />
+            </div>
+            <Button variant="ghost" size="sm" onClick={() => removeItem('tickets', tier.id)}>
+              ✕
+            </Button>
+          </div>
+        ))}
+        <p className="field-help">{t('tierFeaturesHelp')}</p>
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={() => addItem('tickets', { name: {}, price: '', badge: {}, features: {}, highlighted: false })}
+        >
+          {t('addTier')}
+        </Button>
+      </>
+    )
+  }
+
+  function renderContact() {
+    const contact = event.contact ?? {}
+    const set = (key, value) => patchEvent({ contact: { ...contact, [key]: value } })
+    return (
+      <>
+        <Field label={t('contactName')}>
+          {({ id }) => <Input id={id} value={contact.name ?? ''} onChange={(e) => set('name', e.target.value)} />}
+        </Field>
+        <Field label={t('contactEmail')}>
+          {({ id }) => (
+            <Input id={id} type="email" value={contact.email ?? ''} onChange={(e) => set('email', e.target.value)} />
+          )}
+        </Field>
+        <Field label={t('contactPhone')}>
+          {({ id }) => (
+            <Input id={id} type="tel" value={contact.phone ?? ''} onChange={(e) => set('phone', e.target.value)} />
+          )}
+        </Field>
+        <Field label={t('contactWebsite')}>
+          {({ id }) => (
+            <Input id={id} type="url" value={contact.website ?? ''} onChange={(e) => set('website', e.target.value)} />
+          )}
+        </Field>
+      </>
+    )
+  }
+
+  const sectionRenderers = {
+    basics: renderBasics,
+    hero: renderHero,
+    about: renderAbout,
+    speakers: renderSpeakers,
+    agenda: renderAgenda,
+    tickets: renderTickets,
+    contact: renderContact,
+  }
 
   return (
     <div className={styles.wrap}>
-      {/* Link + controls */}
+      {/* ---- toolbar ---- */}
       <section className={`card card-pad ${styles.toolbar}`}>
         <div className={styles.linkRow}>
           <span className={styles.linkLabel}>{t('publicLink')}</span>
@@ -176,12 +531,7 @@ export function EventPageEditor({ initialEvent }) {
               {copied ? t('linkCopied') : t('copyLink')}
             </Button>
             {event.status === 'published' && (
-              <a
-                className="btn btn-secondary btn-sm"
-                href={publicUrl}
-                target="_blank"
-                rel="noreferrer"
-              >
+              <a className="btn btn-secondary btn-sm" href={publicUrl} target="_blank" rel="noreferrer">
                 {t('openPage')}
               </a>
             )}
@@ -191,6 +541,9 @@ export function EventPageEditor({ initialEvent }) {
           <p className={`alert alert-info ${styles.draftNote}`}>{t('draftNote')}</p>
         )}
         <div className={styles.previewBar}>
+          <Button onClick={() => setPanelSection(panelSection ? null : 'basics')}>
+            {t('customize')}
+          </Button>
           <p className={styles.hint}>{t('previewHint')}</p>
           <div className={styles.localeSwitch} role="tablist" aria-label="Preview language">
             {LOCALES.map((l) => (
@@ -200,10 +553,7 @@ export function EventPageEditor({ initialEvent }) {
                 role="tab"
                 aria-selected={previewLocale === l}
                 data-active={previewLocale === l}
-                onClick={() => {
-                  setPreviewLocale(l)
-                  setEditingField(null)
-                }}
+                onClick={() => setPreviewLocale(l)}
               >
                 {LOCALE_NAMES[l]}
               </button>
@@ -212,223 +562,65 @@ export function EventPageEditor({ initialEvent }) {
           <div className={styles.saveStatus} aria-live="polite">
             {saveState === 'saved' && <span className="badge badge-confirmed">{t('saved')}</span>}
             {saveState === 'error' && <span className="badge badge-cancelled">{t('saveError')}</span>}
+            {dirty && saveState === 'idle' && (
+              <span className="badge">{t('unsavedChanges')}</span>
+            )}
           </div>
+          {event.status === 'draft' ? (
+            <Button variant="secondary" onClick={() => setStatus('published')}>
+              {t('publish')}
+            </Button>
+          ) : (
+            <Button variant="secondary" onClick={() => setStatus('draft')}>
+              {t('unpublish')}
+            </Button>
+          )}
+          <Button onClick={save} disabled={saveState === 'saving' || !dirty}>
+            {t('savePage')}
+          </Button>
         </div>
       </section>
 
-      {/* The page, as attendees see it */}
-      <section className={styles.frame}>
-        <article>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            hidden
-            onChange={uploadCover}
+      {/* ---- preview + panel ---- */}
+      <div className={`${styles.split} ${panelSection ? styles.splitOpen : ''}`}>
+        <section className={styles.frame}>
+          <EventPageView
+            event={event}
+            locale={previewLocale}
+            editable
+            onEditSection={(s) => setPanelSection(s)}
           />
-          {coverUrl ? (
-            <div className={`${styles.editable} ${styles.coverWrap}`}>
-              <div className={publicStyles.cover}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={coverUrl} alt="" />
-              </div>
-              <button
-                type="button"
-                className={styles.pencil}
-                aria-label={t('changeCover')}
-                title={t('changeCover')}
-                onClick={() => fileInputRef.current?.click()}
-              >
-                <PencilIcon />
-              </button>
+        </section>
+
+        {panelSection && (
+          <aside className={styles.panel} aria-label={t('customize')}>
+            <div className={styles.panelHead}>
+              <h2>{t('customize')}</h2>
+              <Button variant="ghost" size="sm" onClick={() => setPanelSection(null)}>
+                ✕
+              </Button>
             </div>
-          ) : (
-            <button
-              type="button"
-              className={styles.coverPlaceholder}
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <PencilIcon /> {t('addCover')}
-            </button>
-          )}
-
-          <div className="container-narrow" style={{ paddingBlock: 'var(--s-6)' }}>
-            <Editable
-              label={t('edit')}
-              editing={editingField === 'name'}
-              onStart={() => startEdit('name')}
-              renderEdit={() => (
-                <div className={styles.editRow}>
-                  <input
-                    className={`${inputClass} ${styles.titleInput}`}
-                    value={draftValue}
-                    autoFocus
-                    onChange={(e) => setDraftValue(e.target.value)}
-                    onKeyDown={(e) => onTextKeyDown(e, 'name')}
-                  />
-                  <Button size="sm" onClick={() => saveLocalized('name')}>✓</Button>
-                  <Button size="sm" variant="ghost" onClick={cancelEdit}>✕</Button>
-                </div>
-              )}
-            >
-              <h1 className="page-title">{name}</h1>
-            </Editable>
-
-            <dl className={publicStyles.meta}>
-              <div className={styles.editable}>
-                <dt>{tEvent('when')}</dt>
-                <dd>
-                  {formatEventDateRange(event.starts_at, event.ends_at, event.timezone, previewLocale)}
-                </dd>
-                <Link
-                  href={`/console/events/${event.id}/settings`}
-                  className={styles.pencil}
-                  aria-label={t('editDatesInSettings')}
-                  title={t('editDatesInSettings')}
+            <nav className={styles.panelNav}>
+              {SECTIONS.map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  data-active={panelSection === s}
+                  onClick={() => setPanelSection(s)}
                 >
-                  <PencilIcon />
-                </Link>
-              </div>
-
-              <Editable
-                label={t('edit')}
-                editing={editingField === 'location'}
-                onStart={() => startEdit('location')}
-                renderEdit={() => (
-                  <div>
-                    <dt>{tEvent('where')}</dt>
-                    <div className={styles.editRow}>
-                      <input
-                        className={inputClass}
-                        value={draftValue}
-                        autoFocus
-                        onChange={(e) => setDraftValue(e.target.value)}
-                        onKeyDown={(e) => onTextKeyDown(e, 'location')}
-                      />
-                      <Button size="sm" onClick={() => saveLocalized('location')}>✓</Button>
-                      <Button size="sm" variant="ghost" onClick={cancelEdit}>✕</Button>
-                    </div>
-                  </div>
-                )}
-              >
-                <div>
-                  <dt>{tEvent('where')}</dt>
-                  <dd>{location || <span className={styles.empty}>{t('addLocation')}</span>}</dd>
-                </div>
-              </Editable>
-
-              <Editable
-                label={t('edit')}
-                editing={editingField === 'contact'}
-                onStart={() => startEdit('contact')}
-                renderEdit={() => (
-                  <div>
-                    <dt>{tEvent('contact')}</dt>
-                    <div className={styles.contactEdit}>
-                      <input
-                        className={inputClass}
-                        placeholder={t('contactName')}
-                        value={draftContact.name ?? ''}
-                        autoFocus
-                        onChange={(e) => setDraftContact({ ...draftContact, name: e.target.value })}
-                      />
-                      <input
-                        className={inputClass}
-                        type="email"
-                        placeholder={t('contactEmail')}
-                        value={draftContact.email ?? ''}
-                        onChange={(e) => setDraftContact({ ...draftContact, email: e.target.value })}
-                      />
-                      <input
-                        className={inputClass}
-                        type="tel"
-                        placeholder={t('contactPhone')}
-                        value={draftContact.phone ?? ''}
-                        onChange={(e) => setDraftContact({ ...draftContact, phone: e.target.value })}
-                      />
-                      <input
-                        className={inputClass}
-                        type="url"
-                        placeholder={t('contactWebsite')}
-                        value={draftContact.website ?? ''}
-                        onChange={(e) => setDraftContact({ ...draftContact, website: e.target.value })}
-                      />
-                      <div className={styles.editRow}>
-                        <Button size="sm" onClick={saveContact}>✓</Button>
-                        <Button size="sm" variant="ghost" onClick={cancelEdit}>✕</Button>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              >
-                <div>
-                  <dt>{tEvent('contact')}</dt>
-                  <dd>
-                    {hasContact ? (
-                      <>
-                        {contact.name && <div>{contact.name}</div>}
-                        {contact.email && <div>{contact.email}</div>}
-                        {contact.phone && <div>{contact.phone}</div>}
-                        {contact.website && <div>{contact.website}</div>}
-                      </>
-                    ) : (
-                      <span className={styles.empty}>{t('addContact')}</span>
-                    )}
-                  </dd>
-                </div>
-              </Editable>
-            </dl>
-
-            <Editable
-              label={t('edit')}
-              editing={editingField === 'description'}
-              onStart={() => startEdit('description')}
-              renderEdit={() => (
-                <div>
-                  <textarea
-                    className={`${inputClass} ${styles.descriptionInput}`}
-                    rows={5}
-                    value={draftValue}
-                    autoFocus
-                    onChange={(e) => setDraftValue(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Escape') cancelEdit()
-                    }}
-                  />
-                  <div className={styles.editRow}>
-                    <Button size="sm" onClick={() => saveLocalized('description')}>✓</Button>
-                    <Button size="sm" variant="ghost" onClick={cancelEdit}>✕</Button>
-                  </div>
-                </div>
-              )}
-            >
-              {description ? (
-                <p className={publicStyles.description}>{description}</p>
-              ) : (
-                <p className={`${publicStyles.description} ${styles.empty}`}>
-                  {t('addDescription')}
-                </p>
-              )}
-            </Editable>
-
-            <div className={publicStyles.cta}>
-              {closed ? (
-                <p className="alert alert-info">{tEvent('registrationClosed')}</p>
-              ) : notOpenYet ? (
-                <p className="alert alert-info">
-                  {tEvent('registrationNotOpen', {
-                    date: formatEventDate(event.registration_opens_at, event.timezone, previewLocale),
-                  })}
-                </p>
-              ) : (
-                <span className={`btn btn-primary btn-lg ${styles.fakeButton}`} aria-disabled="true">
-                  {tEvent('register')}
-                </span>
-              )}
+                  {t(`section_${s}`)}
+                </button>
+              ))}
+            </nav>
+            <div className={styles.panelBody}>{sectionRenderers[panelSection]?.()}</div>
+            <div className={styles.panelFoot}>
+              <Button onClick={save} disabled={saveState === 'saving' || !dirty}>
+                {t('savePage')}
+              </Button>
             </div>
-          </div>
-        </article>
-      </section>
+          </aside>
+        )}
+      </div>
     </div>
   )
 }
