@@ -98,7 +98,8 @@
     "browseEvents": "Ver eventos",
     "cancelParticipant": "Cancelar este participante",
     "cancelConfirm": "¿Cancelar a {name}? Una persona en lista de espera podría ocupar su lugar.",
-    "registeredOn": "Inscrito el {date}"
+    "registeredOn": "Inscrito el {date}",
+    "eventUnavailable": "El evento ya no está disponible"
   },
   "console": {
     "title": "Consola del organizador",
@@ -239,7 +240,14 @@
     "privCheckin": "Check-in",
     "privUpdateEvent": "Editar evento",
     "privDeleteRegistrants": "Eliminar inscritos",
-    "privManageTeam": "Equipo"
+    "privManageTeam": "Equipo",
+    "roleOrganizer": "Organizador",
+    "roleViewer": "Observador",
+    "saveFailed": "Error al guardar: tus últimos cambios no se han almacenado",
+    "publishFailed": "Error al publicar: el formulario no se ha publicado",
+    "loadError": "No se pudieron cargar los participantes. Ajusta la búsqueda o inténtalo de nuevo.",
+    "navHome": "Inicio",
+    "navMyEvents": "Mis eventos"
   },
   "questionTypes": {
     "text": "Texto corto",

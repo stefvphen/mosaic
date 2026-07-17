@@ -98,7 +98,8 @@
     "browseEvents": "Переглянути події",
     "cancelParticipant": "Скасувати цього учасника",
     "cancelConfirm": "Скасувати {name}? Його місце може зайняти учасник зі списку очікування.",
-    "registeredOn": "Зареєстровано {date}"
+    "registeredOn": "Зареєстровано {date}",
+    "eventUnavailable": "Подія більше недоступна"
   },
   "console": {
     "title": "Консоль організатора",
@@ -239,7 +240,14 @@
     "privCheckin": "Реєстрація прибуття",
     "privUpdateEvent": "Зміна події",
     "privDeleteRegistrants": "Видалення учасників",
-    "privManageTeam": "Команда"
+    "privManageTeam": "Команда",
+    "roleOrganizer": "Організатор",
+    "roleViewer": "Спостерігач",
+    "saveFailed": "Помилка збереження — останні зміни не збережено",
+    "publishFailed": "Помилка публікації — форму не опубліковано",
+    "loadError": "Не вдалося завантажити учасників. Змініть пошук або спробуйте ще раз.",
+    "navHome": "Головна",
+    "navMyEvents": "Мої події"
   },
   "questionTypes": {
     "text": "Короткий текст",

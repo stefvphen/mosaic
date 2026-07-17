@@ -98,7 +98,8 @@
     "browseEvents": "Browse events",
     "cancelParticipant": "Cancel this participant",
     "cancelConfirm": "Cancel {name}? A waitlisted participant may take this spot.",
-    "registeredOn": "Registered {date}"
+    "registeredOn": "Registered {date}",
+    "eventUnavailable": "Event no longer available"
   },
   "console": {
     "title": "Organizer console",
@@ -239,7 +240,14 @@
     "privCheckin": "Check-in",
     "privUpdateEvent": "Edit event",
     "privDeleteRegistrants": "Delete registrants",
-    "privManageTeam": "Team"
+    "privManageTeam": "Team",
+    "roleOrganizer": "Organizer",
+    "roleViewer": "Viewer",
+    "saveFailed": "Saving failed — your latest changes are not stored",
+    "publishFailed": "Publishing failed — the form was not published",
+    "loadError": "Could not load participants. Adjust your search or try again.",
+    "navHome": "Home",
+    "navMyEvents": "My Events"
   },
   "questionTypes": {
     "text": "Short text",
