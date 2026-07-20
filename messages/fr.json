@@ -278,6 +278,12 @@
     "fullName": "Nom complet",
     "language": "Langue préférée",
     "saved": "Enregistré",
-    "updateError": "Une erreur est survenue. Veuillez réessayer."
+    "updateError": "Une erreur est survenue. Veuillez réessayer.",
+    "namePromptTitle": "Comment vous appelez-vous ?",
+    "namePromptIntro": "Ajoutez votre nom pour que les organisateurs sachent qui vous êtes. Vous pourrez le modifier plus tard dans votre profil.",
+    "firstName": "Prénom",
+    "lastName": "Nom",
+    "namePromptSkip": "Passer pour l'instant",
+    "namePromptRequired": "Veuillez saisir votre prénom et votre nom."
   }
 }

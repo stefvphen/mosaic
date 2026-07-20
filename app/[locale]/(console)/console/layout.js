@@ -5,6 +5,7 @@ import { getSupabaseServerClient } from '@/lib/supabase/server'
 import { MosaicMark } from '@/components/ui'
 import { LocaleSwitcher } from '@/components/shell/LocaleSwitcher'
 import { SignOutButton } from '@/components/shell/SignOutButton'
+import { NamePrompt } from '@/components/shell/NamePrompt'
 import { QueryProvider } from './QueryProvider'
 import styles from './console.module.css'
 
@@ -55,6 +56,7 @@ export default async function ConsoleLayout({ children, params }) {
           </div>
         </header>
         <main className={styles.main}>{children}</main>
+        <NamePrompt />
       </div>
     </QueryProvider>
   )
