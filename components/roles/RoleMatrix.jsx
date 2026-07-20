@@ -81,7 +81,7 @@ export function RoleMatrix({ roles, orgId, eventId = null }) {
             <tr>
               <th>{t('roleName')}</th>
               {PRIVILEGES.map((p) => (
-                <th key={p.key} style={{ textAlign: 'center', fontSize: 'var(--text-xs)' }}>
+                <th key={p.key} style={{ textAlign: 'center', fontSize: 'var(--text-xs)', whiteSpace: 'normal', minWidth: '5.5rem', lineHeight: '1.25' }}>
                   {t(p.label)}
                 </th>
               ))}
