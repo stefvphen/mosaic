@@ -277,7 +277,9 @@
     "buttonBackground": "Button Background Color",
     "buttonTextColor": "Button Text Color",
     "roleColor": "Role Color",
-    "showHeroAgendaBtn": "Show \"View Agenda\" Button in Hero"
+    "showHeroAgendaBtn": "Show \"View Agenda\" Button in Hero",
+    "statsHelp": "Short highlights shown in the About section, e.g. “50+” and “Workshops”.",
+    "statLabelPlaceholder": "e.g. Workshops"
   },
   "questionTypes": {
     "text": "Short text",

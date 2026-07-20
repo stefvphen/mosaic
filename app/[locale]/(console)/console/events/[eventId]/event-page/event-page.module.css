@@ -282,6 +282,21 @@
   min-width: 0;
 }
 
+/* Numbered badge on each stat card. */
+.statNumber {
+  flex-shrink: 0;
+  width: 1.75rem;
+  height: 1.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--pine-tint);
+  color: var(--pine-deep);
+  font-size: var(--text-sm);
+  font-weight: 700;
+}
+
 .panelItemMedia {
   display: grid;
   gap: var(--s-1);

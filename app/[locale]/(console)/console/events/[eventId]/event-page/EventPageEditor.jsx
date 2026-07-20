@@ -607,31 +607,50 @@ export function EventPageEditor({ initialEvent }) {
         </div>
 
         <h4 className={styles.panelSubhead}>{t('stats')}</h4>
+        <p className="field-help">{t('statsHelp')}</p>
         {(about.stats ?? []).map((s, i) => (
-          <div key={i} className={styles.panelRow}>
-            <Input
-              placeholder={t('statValue')}
-              value={s.value ?? ''}
-              onChange={(e) =>
-                patchContent('about', {
-                  stats: about.stats.map((x, j) => (j === i ? { ...x, value: e.target.value } : x)),
-                })
-              }
-            />
-            <Input
-              placeholder={`${t('statLabel')} (${previewLocale})`}
-              value={lv(s.label)}
-              onChange={(e) =>
-                patchContent('about', {
-                  stats: about.stats.map((x, j) =>
-                    j === i ? { ...x, label: setLv(x.label, e.target.value) } : x
-                  ),
-                })
-              }
-            />
+          <div key={i} className={styles.panelItem}>
+            <div className={styles.statNumber} aria-hidden="true">
+              {i + 1}
+            </div>
+            <div className={styles.panelItemFields}>
+              <Field label={t('statValue')}>
+                {({ id }) => (
+                  <Input
+                    id={id}
+                    placeholder="50+"
+                    value={s.value ?? ''}
+                    onChange={(e) =>
+                      patchContent('about', {
+                        stats: about.stats.map((x, j) =>
+                          j === i ? { ...x, value: e.target.value } : x
+                        ),
+                      })
+                    }
+                  />
+                )}
+              </Field>
+              <Field label={`${t('statLabel')} (${previewLocale})`}>
+                {({ id }) => (
+                  <Input
+                    id={id}
+                    placeholder={t('statLabelPlaceholder')}
+                    value={lv(s.label)}
+                    onChange={(e) =>
+                      patchContent('about', {
+                        stats: about.stats.map((x, j) =>
+                          j === i ? { ...x, label: setLv(x.label, e.target.value) } : x
+                        ),
+                      })
+                    }
+                  />
+                )}
+              </Field>
+            </div>
             <Button
               variant="ghost"
               size="sm"
+              aria-label={t('remove')}
               onClick={() =>
                 patchContent('about', { stats: about.stats.filter((_, j) => j !== i) })
               }

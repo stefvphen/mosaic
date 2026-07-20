@@ -277,7 +277,9 @@
     "buttonBackground": "Couleur de fond du bouton",
     "buttonTextColor": "Couleur du texte du bouton",
     "roleColor": "Couleur du rôle",
-    "showHeroAgendaBtn": "Afficher le bouton \"Voir l'agenda\" dans l'en-tête"
+    "showHeroAgendaBtn": "Afficher le bouton \"Voir l'agenda\" dans l'en-tête",
+    "statsHelp": "Chiffres clés affichés dans la section À propos, p. ex. « 50+ » et « Ateliers ».",
+    "statLabelPlaceholder": "p. ex. Ateliers"
   },
   "questionTypes": {
     "text": "Texte court",

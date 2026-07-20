@@ -277,7 +277,9 @@
     "buttonBackground": "Цвет фона кнопки",
     "buttonTextColor": "Цвет текста кнопки",
     "roleColor": "Цвет роли",
-    "showHeroAgendaBtn": "Показывать кнопку «Просмотреть программу» в шапке"
+    "showHeroAgendaBtn": "Показывать кнопку «Просмотреть программу» в шапке",
+    "statsHelp": "Краткие цифры в разделе «О событии», напр. «50+» и «Воркшопы».",
+    "statLabelPlaceholder": "напр. Воркшопы"
   },
   "questionTypes": {
     "text": "Короткий текст",

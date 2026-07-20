@@ -277,7 +277,9 @@
     "buttonBackground": "Color de fondo del botón",
     "buttonTextColor": "Color del texto del botón",
     "roleColor": "Color del cargo",
-    "showHeroAgendaBtn": "Mostrar botón \"Ver agenda\" en la portada"
+    "showHeroAgendaBtn": "Mostrar botón \"Ver agenda\" en la portada",
+    "statsHelp": "Cifras destacadas que aparecen en la sección Sobre, p. ej. «50+» y «Talleres».",
+    "statLabelPlaceholder": "p. ej. Talleres"
   },
   "questionTypes": {
     "text": "Texto corto",
