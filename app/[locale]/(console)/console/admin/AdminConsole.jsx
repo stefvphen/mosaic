@@ -47,26 +47,11 @@ export function AdminConsole({
     else router.refresh()
   }
 
-  async function changeGlobalRole(user, role) {
+  function changeGlobalRole(user, role) {
     if (role === 'none') {
       run(supabase.rpc('revoke_global_role', { p_user_id: user.id }))
     } else {
-      setError(null)
-      const { error } = await supabase.rpc('grant_global_role', {
-        p_email: user.email,
-        p_role: role,
-      })
-      if (error) {
-        setError(error.message)
-      } else {
-        // Fire-and-forget notification email — don't block the UI on it.
-        fetch('/api/notify-role', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: user.email, role }),
-        }).catch(() => {})
-        router.refresh()
-      }
+      run(supabase.rpc('grant_global_role', { p_email: user.email, p_role: role }))
     }
   }
 
