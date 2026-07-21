@@ -3,9 +3,11 @@ import { Link } from '@/lib/i18n/navigation'
 import { getSupabaseServerClient } from '@/lib/supabase/server'
 import { lt } from '@/lib/i18n/locales'
 import { formatEventDateRange } from '@/lib/dates'
+import { eventPhase, EVENT_PHASE_TONES } from '@/lib/event-phase'
 import { getDateFormatPrefs } from '@/lib/date-format-server'
 import { Badge } from '@/components/ui'
 import { NewEventButton } from './NewEventButton'
+import { DeleteEventButton } from './DeleteEventButton'
 import { JoinEvents } from './JoinEvents'
 import { RequestOrganizerRole } from './RequestOrganizerRole'
 import styles from './console.module.css'
@@ -34,6 +36,8 @@ export default async function ConsoleHome({ params }) {
   ])
   // Admins and global organizers see and manage every event.
   const seesAllEvents = (myRoles?.length ?? 0) > 0
+  // Deleting is tighter than seeing: admins, or the event's own creator.
+  const isAdmin = (myRoles ?? []).some((r) => r.role === 'admin' || r.role === 'super_admin')
   const activeIds = (memberships ?? [])
     .filter((m) => m.status === 'active')
     .map((m) => m.event_id)
@@ -48,7 +52,8 @@ export default async function ConsoleHome({ params }) {
   if (seesAllEvents || activeIds.length > 0) {
     let query = supabase
       .from('events')
-      .select('id, slug, status, name, default_locale, timezone, starts_at, ends_at')
+      .select('id, slug, status, name, default_locale, timezone, starts_at, ends_at, registration_opens_at, registration_closes_at, created_by, first_published_at')
+      .is('deleted_at', null)
       .order('starts_at', { ascending: false })
     if (!seesAllEvents) query = query.in('id', activeIds)
     events = (await query).data ?? []
@@ -71,6 +76,8 @@ export default async function ConsoleHome({ params }) {
       .from('events')
       .select('id, name, default_locale, timezone, starts_at, ends_at')
       .eq('status', 'published')
+      .eq('visibility', 'public')
+      .is('deleted_at', null)
       .order('starts_at', { ascending: true })
     joinable = (published ?? []).filter((e) => !activeIds.includes(e.id))
   }
@@ -93,6 +100,7 @@ export default async function ConsoleHome({ params }) {
                 <th>{t('console.startsAt')}</th>
                 <th>{t('console.participants')}</th>
                 <th></th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
@@ -108,7 +116,23 @@ export default async function ConsoleHome({ params }) {
                   </td>
                   <td>{totals.get(event.id) ?? 0}</td>
                   <td>
-                    <Badge tone={event.status}>{t(`status.${event.status}`)}</Badge>
+                    <span style={{ display: 'inline-flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+                      <Badge tone={event.status}>{t(`status.${event.status}`)}</Badge>
+                      {event.status === 'published' && (
+                        <Badge tone={EVENT_PHASE_TONES[eventPhase(event)]}>
+                          {t(`eventPhase.${eventPhase(event)}`)}
+                        </Badge>
+                      )}
+                    </span>
+                  </td>
+                  <td style={{ textAlign: 'end' }}>
+                    {(isAdmin || event.created_by === user.id) && (
+                      <DeleteEventButton
+                        eventId={event.id}
+                        eventName={lt(event.name, locale, event.default_locale)}
+                        everPublished={Boolean(event.first_published_at)}
+                      />
+                    )}
                   </td>
                 </tr>
               ))}
