@@ -332,7 +332,11 @@
     "sectionOrderHelp": "Réorganisez l'ordre des sections sur la page. L'en-tête reste toujours en haut.",
     "moveUp": "Monter",
     "moveDown": "Descendre",
-    "alignDefault": "Alignement par défaut"
+    "alignDefault": "Alignement par défaut",
+    "testimonialLayout": "Disposition",
+    "testimonialLayoutCards": "Cartes",
+    "testimonialLayoutQuote": "Citation minimaliste (centrée)",
+    "testimonialHeadingHelp": "Le titre est facultatif — laissez-le vide pour n'afficher que les citations."
   },
   "questionTypes": {
     "text": "Texte court",

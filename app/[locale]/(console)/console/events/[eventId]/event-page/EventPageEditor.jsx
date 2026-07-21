@@ -1241,10 +1241,23 @@ export function EventPageEditor({ initialEvent }) {
   }
 
   function renderTestimonials() {
-    const items = content.testimonials?.items ?? []
+    const testimonials = content.testimonials ?? {}
+    const items = testimonials.items ?? []
     return (
       <>
         {sectionHeader('testimonials')}
+        <div className={styles.colorField}>
+          <span className="field-label">{t('testimonialLayout')}</span>
+          <NativeSelect
+            value={testimonials.layout ?? 'cards'}
+            onChange={(e) => patchContent('testimonials', { layout: e.target.value })}
+            aria-label={t('testimonialLayout')}
+          >
+            <option value="cards">{t('testimonialLayoutCards')}</option>
+            <option value="quote">{t('testimonialLayoutQuote')}</option>
+          </NativeSelect>
+        </div>
+        <p className="field-help">{t('testimonialHeadingHelp')}</p>
         {headingEditor('testimonials')}
         {sectionBgField('testimonials')}
         {items.map((it) => (

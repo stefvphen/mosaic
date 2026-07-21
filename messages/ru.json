@@ -332,7 +332,11 @@
     "sectionOrderHelp": "Измените порядок разделов на странице. Шапка всегда остаётся сверху.",
     "moveUp": "Вверх",
     "moveDown": "Вниз",
-    "alignDefault": "Выравнивание по умолчанию"
+    "alignDefault": "Выравнивание по умолчанию",
+    "testimonialLayout": "Макет",
+    "testimonialLayoutCards": "Карточки",
+    "testimonialLayoutQuote": "Минималистичная цитата (по центру)",
+    "testimonialHeadingHelp": "Заголовок необязателен — оставьте пустым, чтобы показывать только цитаты."
   },
   "questionTypes": {
     "text": "Короткий текст",

@@ -332,7 +332,11 @@
     "sectionOrderHelp": "Змініть порядок розділів на сторінці. Шапка завжди залишається зверху.",
     "moveUp": "Вгору",
     "moveDown": "Вниз",
-    "alignDefault": "Вирівнювання за замовчуванням"
+    "alignDefault": "Вирівнювання за замовчуванням",
+    "testimonialLayout": "Макет",
+    "testimonialLayoutCards": "Картки",
+    "testimonialLayoutQuote": "Мінімалістична цитата (по центру)",
+    "testimonialHeadingHelp": "Заголовок необов'язковий — залиште порожнім, щоб показувати лише цитати."
   },
   "questionTypes": {
     "text": "Короткий текст",

@@ -332,7 +332,11 @@
     "sectionOrderHelp": "Reorder how sections appear on the page. The hero always stays on top.",
     "moveUp": "Move up",
     "moveDown": "Move down",
-    "alignDefault": "Default Alignment"
+    "alignDefault": "Default Alignment",
+    "testimonialLayout": "Layout",
+    "testimonialLayoutCards": "Cards",
+    "testimonialLayoutQuote": "Minimal Quote (centered)",
+    "testimonialHeadingHelp": "The heading is optional — leave it empty to show only the quotes."
   },
   "questionTypes": {
     "text": "Short text",

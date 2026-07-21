@@ -119,11 +119,14 @@ export function TracksSection({ content = {}, locale, defaultLocale, editable, o
 /* ---------------- Testimonials ---------------- */
 
 export function TestimonialsSection({ content = {}, locale, defaultLocale, editable, onEditSection }) {
-  const t = useTranslations('event')
   const sp = useSectionProps(editable, onEditSection)
   const L = (m) => lt(m, locale, defaultLocale)
   const items = content.items ?? []
   if (!content.enabled || items.length === 0) return null
+
+  // The heading is optional here: no text → no heading at all.
+  const headingText = L(content.heading)
+  const minimal = content.layout === 'quote'
 
   return (
     <Editable
@@ -133,22 +136,35 @@ export function TestimonialsSection({ content = {}, locale, defaultLocale, edita
       {...sp}
     >
       <div className="container">
-        <Heading
-          text={L(content.heading) || t('testimonialsDefault')}
-          style={headingStyle(content.heading_style)}
-          centered
-        />
-        <div className={styles.quoteGrid}>
-          {items.map((it) => (
-            <figure key={it.id} className={styles.quoteCard}>
-              <blockquote className={styles.quoteText}>{L(it.quote)}</blockquote>
-              <figcaption className={styles.quoteMeta}>
-                {it.author && <strong>{it.author}</strong>}
-                {L(it.role) && <span>{L(it.role)}</span>}
-              </figcaption>
-            </figure>
-          ))}
-        </div>
+        {headingText && (
+          <Heading text={headingText} style={headingStyle(content.heading_style)} centered />
+        )}
+        {minimal ? (
+          <div className={styles.quoteMinimalList}>
+            {items.map((it) => (
+              <figure key={it.id} className={styles.quoteMinimal}>
+                <blockquote>&ldquo;{L(it.quote)}&rdquo;</blockquote>
+                {(it.author || L(it.role)) && (
+                  <figcaption>
+                    {[it.author, L(it.role)].filter(Boolean).join(' · ')}
+                  </figcaption>
+                )}
+              </figure>
+            ))}
+          </div>
+        ) : (
+          <div className={styles.quoteGrid}>
+            {items.map((it) => (
+              <figure key={it.id} className={styles.quoteCard}>
+                <blockquote className={styles.quoteText}>{L(it.quote)}</blockquote>
+                <figcaption className={styles.quoteMeta}>
+                  {it.author && <strong>{it.author}</strong>}
+                  {L(it.role) && <span>{L(it.role)}</span>}
+                </figcaption>
+              </figure>
+            ))}
+          </div>
+        )}
       </div>
     </Editable>
   )

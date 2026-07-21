@@ -332,7 +332,11 @@
     "sectionOrderHelp": "Reordena cómo aparecen las secciones en la página. El encabezado siempre queda arriba.",
     "moveUp": "Subir",
     "moveDown": "Bajar",
-    "alignDefault": "Alineación por defecto"
+    "alignDefault": "Alineación por defecto",
+    "testimonialLayout": "Diseño",
+    "testimonialLayoutCards": "Tarjetas",
+    "testimonialLayoutQuote": "Cita minimalista (centrada)",
+    "testimonialHeadingHelp": "El título es opcional: déjalo vacío para mostrar solo las citas."
   },
   "questionTypes": {
     "text": "Texto corto",
