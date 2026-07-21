@@ -5,6 +5,8 @@ import { lt } from '@/lib/i18n/locales'
 import { formatEventDateRange } from '@/lib/dates'
 import { eventPhase, EVENT_PHASE_TONES } from '@/lib/event-phase'
 import { Badge, MosaicMark } from '@/components/ui'
+import { getDateFormatPrefs } from '@/lib/date-format-server'
+import { MosaicMark } from '@/components/ui'
 import styles from './home.module.css'
 
 export const revalidate = 300
@@ -13,6 +15,7 @@ export default async function HomePage({ params }) {
   const { locale } = await params
   setRequestLocale(locale)
   const t = await getTranslations()
+  const dateFmt = await getDateFormatPrefs()
 
   const supabase = getSupabaseAnonClient()
   const { data: events } = await supabase
@@ -55,7 +58,7 @@ export default async function HomePage({ params }) {
                         <Badge tone={EVENT_PHASE_TONES[phase]}>{t(`eventPhase.${phase}`)}</Badge>
                       </p>
                       <p className={styles.cardMeta}>
-                        {formatEventDateRange(event.starts_at, event.ends_at, event.timezone, locale)}
+                        {formatEventDateRange(event.starts_at, event.ends_at, event.timezone, locale, dateFmt)}
                       </p>
                       {lt(event.location, locale, event.default_locale) && (
                         <p className={styles.cardMeta}>

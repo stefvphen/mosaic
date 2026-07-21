@@ -6,6 +6,7 @@ import { useRouter } from '@/lib/i18n/navigation'
 import { getSupabaseBrowserClient } from '@/lib/supabase/client'
 import { lt } from '@/lib/i18n/locales'
 import { formatEventDateRange } from '@/lib/dates'
+import { useDateFormatPrefs } from '@/components/providers/DateFormatProvider'
 import { Badge, Button, Field, Input } from '@/components/ui'
 
 /**
@@ -16,6 +17,7 @@ import { Badge, Button, Field, Input } from '@/components/ui'
 export function JoinEvents({ events, requestedEventIds, allAccess = false }) {
   const t = useTranslations('console')
   const locale = useLocale()
+  const dateFmt = useDateFormatPrefs()
   const router = useRouter()
   const supabase = getSupabaseBrowserClient()
   const [error, setError] = useState(null)
@@ -82,7 +84,7 @@ export function JoinEvents({ events, requestedEventIds, allAccess = false }) {
                 <td>
                   <strong>{lt(event.name, locale, event.default_locale)}</strong>
                   <div style={{ color: 'var(--ink-soft)', fontSize: 'var(--text-xs)' }}>
-                    {formatEventDateRange(event.starts_at, event.ends_at, event.timezone, locale)}
+                    {formatEventDateRange(event.starts_at, event.ends_at, event.timezone, locale, dateFmt)}
                   </div>
                 </td>
                 <td style={{ textAlign: 'end' }}>

@@ -4,6 +4,7 @@ import { getSupabaseServerClient } from '@/lib/supabase/server'
 import { lt } from '@/lib/i18n/locales'
 import { formatEventDateRange } from '@/lib/dates'
 import { eventPhase, EVENT_PHASE_TONES } from '@/lib/event-phase'
+import { getDateFormatPrefs } from '@/lib/date-format-server'
 import { Badge } from '@/components/ui'
 import { NewEventButton } from './NewEventButton'
 import { DeleteEventButton } from './DeleteEventButton'
@@ -17,6 +18,7 @@ export default async function ConsoleHome({ params }) {
   const { locale } = await params
   setRequestLocale(locale)
   const t = await getTranslations()
+  const dateFmt = await getDateFormatPrefs()
 
   const supabase = await getSupabaseServerClient()
   const {
@@ -110,7 +112,7 @@ export default async function ConsoleHome({ params }) {
                     </Link>
                   </td>
                   <td>
-                    {formatEventDateRange(event.starts_at, event.ends_at, event.timezone, locale)}
+                    {formatEventDateRange(event.starts_at, event.ends_at, event.timezone, locale, dateFmt)}
                   </td>
                   <td>{totals.get(event.id) ?? 0}</td>
                   <td>

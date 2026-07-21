@@ -329,14 +329,20 @@
     "namePromptIntro": "Add your name so organizers know who you are. You can change it later in your profile.",
     "firstName": "First name",
     "lastName": "Last name",
-    "namePromptSkip": "Skip for now",
     "namePromptRequired": "Please enter your first and last name.",
     "theme": "Appearance",
     "themeHelp": "Choose light or dark, or follow your device.",
     "theme_system": "System",
     "theme_light": "Light",
     "theme_dark": "Dark",
-    "updateError": "Something went wrong. Please try again."
+    "updateError": "Something went wrong. Please try again.",
+    "dateFormat": "Date format",
+    "dateFormatHelp": "How dates appear across Mosaic.",
+    "timeFormat": "Time format",
+    "timeFormatHelp": "12-hour or 24-hour clock.",
+    "dateFormat_auto": "Automatic",
+    "timeFormat_auto": "Automatic",
+    "formatPromptIntro": "How should dates and times look? You can change this anytime in your profile."
   },
   "runtime": {
     "firstName": "First name",

@@ -329,14 +329,20 @@
     "namePromptIntro": "Ajoutez votre nom pour que les organisateurs sachent qui vous êtes. Vous pourrez le modifier plus tard dans votre profil.",
     "firstName": "Prénom",
     "lastName": "Nom",
-    "namePromptSkip": "Passer pour l'instant",
     "namePromptRequired": "Veuillez saisir votre prénom et votre nom.",
     "theme": "Apparence",
     "themeHelp": "Choisissez clair ou sombre, ou suivez votre appareil.",
     "theme_system": "Système",
     "theme_light": "Clair",
     "theme_dark": "Sombre",
-    "updateError": "Une erreur est survenue. Veuillez réessayer."
+    "updateError": "Une erreur est survenue. Veuillez réessayer.",
+    "dateFormat": "Format de date",
+    "dateFormatHelp": "Comment les dates s'affichent dans Mosaic.",
+    "timeFormat": "Format de l'heure",
+    "timeFormatHelp": "Horloge de 12 ou 24 heures.",
+    "dateFormat_auto": "Automatique",
+    "timeFormat_auto": "Automatique",
+    "formatPromptIntro": "Comment les dates et heures doivent-elles s'afficher ? Modifiable à tout moment dans votre profil."
   },
   "runtime": {
     "firstName": "Prénom",

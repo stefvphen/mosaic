@@ -5,6 +5,8 @@ import { setRequestLocale } from 'next-intl/server'
 import { Unbounded, IBM_Plex_Sans } from 'next/font/google'
 import { routing } from '@/lib/i18n/routing'
 import { THEME_COOKIE } from '@/lib/theme'
+import { DATEFMT_COOKIE, parseDateFmtCookie } from '@/lib/date-format'
+import { DateFormatProvider } from '@/components/providers/DateFormatProvider'
 import '@/styles/globals.css'
 
 const display = Unbounded({
@@ -43,8 +45,12 @@ export default async function LocaleLayout({ children, params }) {
   // Explicit theme choice (from the profile) is mirrored to a cookie so the
   // right theme is in the very first HTML — no flash of the wrong palette.
   // Absent/'system' → no attribute, so prefers-color-scheme decides.
-  const themeCookie = (await cookies()).get(THEME_COOKIE)?.value
+  const cookieStore = await cookies()
+  const themeCookie = cookieStore.get(THEME_COOKIE)?.value
   const theme = themeCookie === 'light' || themeCookie === 'dark' ? themeCookie : undefined
+  // Same pattern for date/time format prefs; client components read them
+  // from context, server components from lib/date-format-server.
+  const dateFmtPrefs = parseDateFmtCookie(cookieStore.get(DATEFMT_COOKIE)?.value)
 
   return (
     <html
@@ -54,7 +60,9 @@ export default async function LocaleLayout({ children, params }) {
       className={`${display.variable} ${body.variable}`}
     >
       <body>
-        <NextIntlClientProvider>{children}</NextIntlClientProvider>
+        <NextIntlClientProvider>
+          <DateFormatProvider value={dateFmtPrefs}>{children}</DateFormatProvider>
+        </NextIntlClientProvider>
       </body>
     </html>
   )

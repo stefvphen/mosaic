@@ -329,14 +329,20 @@
     "namePromptIntro": "Añade tu nombre para que los organizadores sepan quién eres. Puedes cambiarlo más tarde en tu perfil.",
     "firstName": "Nombre",
     "lastName": "Apellidos",
-    "namePromptSkip": "Omitir por ahora",
     "namePromptRequired": "Introduce tu nombre y apellidos.",
     "theme": "Apariencia",
     "themeHelp": "Elige claro u oscuro, o sigue tu dispositivo.",
     "theme_system": "Sistema",
     "theme_light": "Claro",
     "theme_dark": "Oscuro",
-    "updateError": "Algo salió mal. Inténtalo de nuevo."
+    "updateError": "Algo salió mal. Inténtalo de nuevo.",
+    "dateFormat": "Formato de fecha",
+    "dateFormatHelp": "Cómo se muestran las fechas en Mosaic.",
+    "timeFormat": "Formato de hora",
+    "timeFormatHelp": "Reloj de 12 o 24 horas.",
+    "dateFormat_auto": "Automático",
+    "timeFormat_auto": "Automático",
+    "formatPromptIntro": "¿Cómo deben verse las fechas y horas? Puedes cambiarlo en tu perfil cuando quieras."
   },
   "runtime": {
     "firstName": "Nombre",
