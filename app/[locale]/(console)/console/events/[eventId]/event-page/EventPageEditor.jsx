@@ -896,11 +896,6 @@ export function EventPageEditor({ initialEvent }) {
             </Button>
           </>
         )}
-        <CheckboxRow
-          label={t('heroTexture')}
-          checked={!!hero.texture}
-          onCheckedChange={(checked) => patchContent('hero', { texture: !!checked })}
-        />
       </>
     )
   }

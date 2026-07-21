@@ -111,20 +111,6 @@
   inset: 0;
 }
 
-/* Subtle diagonal stripe texture over the hero background. */
-.heroPattern {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background-image: repeating-linear-gradient(
-    45deg,
-    rgba(255, 255, 255, 0.045) 0,
-    rgba(255, 255, 255, 0.045) 2px,
-    transparent 2px,
-    transparent 14px
-  );
-}
-
 /* Days / hours / minutes countdown next to the CTA. */
 .countdown {
   display: inline-flex;

@@ -600,7 +600,6 @@ export function EventPageView({ event, locale, registerHref, editable = false, o
           {coverUrl && heroTint && (
             <div className={styles.heroTint} style={{ background: heroTint }} aria-hidden="true" />
           )}
-          {hero.texture && <div className={styles.heroPattern} aria-hidden="true" />}
           <div
             className={`container ${styles.heroInner}`}
             data-align={theme.title_align || undefined}
