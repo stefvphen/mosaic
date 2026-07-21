@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 import { lt } from '@/lib/i18n/locales'
-import { visibleQuestions } from '@/lib/form-engine/visibility'
+import { visibleQuestions, appliesToType } from '@/lib/form-engine/visibility'
 import { validateParticipantAnswers } from '@/lib/form-engine/validate'
 import { FormRenderer } from '@/components/form-runtime/FormRenderer'
 import { Badge, Button, Field, Input } from '@/components/ui'
@@ -35,6 +35,17 @@ export function ParticipantDetail({
   const [saveState, setSaveState] = useState('idle') // idle | saving | error
 
   const typeKey = participant.participant_type_key
+
+  // Identity lives in the form's name/email questions when present (0016);
+  // the drawer's own inputs are only a fallback for forms without them —
+  // otherwise they'd duplicate the questions FormRenderer shows below, and
+  // the two copies could silently diverge.
+  const hasQuestionOfType = (qType) =>
+    (definition?.questions ?? []).some(
+      (q) => q.type === qType && !q.archived && appliesToType(q, typeKey)
+    )
+  const showNameFields = !hasQuestionOfType('name')
+  const showEmailField = !hasQuestionOfType('email')
 
   function reset() {
     setFirstName(participant.first_name ?? '')
@@ -83,7 +94,7 @@ export function ParticipantDetail({
         <header className={styles.drawerHead}>
           <div>
             <h2 style={{ fontSize: 'var(--text-xl)' }}>
-              {participant.first_name} {participant.last_name}
+              {`${participant.first_name ?? ''} ${participant.last_name ?? ''}`.trim() || '—'}
             </h2>
             <span className={styles.muted}>{lt(typeName, locale)}</span>{' '}
             <Badge tone={participant.status}>{t(`status.${participant.status}`)}</Badge>
@@ -96,23 +107,31 @@ export function ParticipantDetail({
         <div className={styles.drawerBody}>
           {editing ? (
             <>
-              <div className={styles.editGrid}>
-                <Field label={t('wizard.firstName')}>
-                  {({ id }) => (
-                    <Input id={id} value={firstName} onChange={(e) => setFirstName(e.target.value)} />
+              {(showNameFields || showEmailField) && (
+                <div className={styles.editGrid}>
+                  {showNameFields && (
+                    <>
+                      <Field label={t('wizard.firstName')}>
+                        {({ id }) => (
+                          <Input id={id} value={firstName} onChange={(e) => setFirstName(e.target.value)} />
+                        )}
+                      </Field>
+                      <Field label={t('wizard.lastName')}>
+                        {({ id }) => (
+                          <Input id={id} value={lastName} onChange={(e) => setLastName(e.target.value)} />
+                        )}
+                      </Field>
+                    </>
                   )}
-                </Field>
-                <Field label={t('wizard.lastName')}>
-                  {({ id }) => (
-                    <Input id={id} value={lastName} onChange={(e) => setLastName(e.target.value)} />
+                  {showEmailField && (
+                    <Field label={t('wizard.email')}>
+                      {({ id }) => (
+                        <Input id={id} type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+                      )}
+                    </Field>
                   )}
-                </Field>
-                <Field label={t('wizard.email')}>
-                  {({ id }) => (
-                    <Input id={id} type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
-                  )}
-                </Field>
-              </div>
+                </div>
+              )}
               <FormRenderer
                 definition={definition}
                 participantTypeKey={typeKey}
