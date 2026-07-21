@@ -4,6 +4,7 @@ import { Link } from '@/lib/i18n/navigation'
 import { getSupabaseServerClient } from '@/lib/supabase/server'
 import { lt } from '@/lib/i18n/locales'
 import { formatEventDateRange } from '@/lib/dates'
+import { getDateFormatPrefs } from '@/lib/date-format-server'
 import { Badge } from '@/components/ui'
 import { CancelParticipantButton } from './CancelParticipantButton'
 import styles from './myregs.module.css'
@@ -14,6 +15,7 @@ export default async function MyRegistrationsPage({ params }) {
   const { locale } = await params
   setRequestLocale(locale)
   const t = await getTranslations()
+  const dateFmt = await getDateFormatPrefs()
 
   const supabase = await getSupabaseServerClient()
   const {
@@ -65,7 +67,7 @@ export default async function MyRegistrationsPage({ params }) {
                 )}
                 <span className={styles.muted}>
                   {reg.events
-                    ? formatEventDateRange(reg.events.starts_at, reg.events.ends_at, reg.events.timezone, locale)
+                    ? formatEventDateRange(reg.events.starts_at, reg.events.ends_at, reg.events.timezone, locale, dateFmt)
                     : ''}
                 </span>
               </div>

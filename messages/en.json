@@ -321,7 +321,14 @@
     "theme_system": "System",
     "theme_light": "Light",
     "theme_dark": "Dark",
-    "updateError": "Something went wrong. Please try again."
+    "updateError": "Something went wrong. Please try again.",
+    "dateFormat": "Date format",
+    "dateFormatHelp": "How dates appear across Mosaic.",
+    "timeFormat": "Time format",
+    "timeFormatHelp": "12-hour or 24-hour clock.",
+    "dateFormat_auto": "Automatic",
+    "timeFormat_auto": "Automatic",
+    "formatPromptIntro": "How should dates and times look? You can change this anytime in your profile."
   },
   "runtime": {
     "firstName": "First name",

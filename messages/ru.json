@@ -321,7 +321,14 @@
     "theme_system": "Системная",
     "theme_light": "Светлая",
     "theme_dark": "Тёмная",
-    "updateError": "Что-то пошло не так. Попробуйте ещё раз."
+    "updateError": "Что-то пошло не так. Попробуйте ещё раз.",
+    "dateFormat": "Формат даты",
+    "dateFormatHelp": "Как даты отображаются в Mosaic.",
+    "timeFormat": "Формат времени",
+    "timeFormatHelp": "12- или 24-часовой формат.",
+    "dateFormat_auto": "Автоматически",
+    "timeFormat_auto": "Автоматически",
+    "formatPromptIntro": "Как должны выглядеть даты и время? Это всегда можно изменить в профиле."
   },
   "runtime": {
     "firstName": "Имя",

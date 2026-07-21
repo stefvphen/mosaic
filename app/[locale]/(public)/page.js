@@ -3,6 +3,7 @@ import { Link } from '@/lib/i18n/navigation'
 import { getSupabaseAnonClient } from '@/lib/supabase/server'
 import { lt } from '@/lib/i18n/locales'
 import { formatEventDateRange } from '@/lib/dates'
+import { getDateFormatPrefs } from '@/lib/date-format-server'
 import { MosaicMark } from '@/components/ui'
 import styles from './home.module.css'
 
@@ -12,6 +13,7 @@ export default async function HomePage({ params }) {
   const { locale } = await params
   setRequestLocale(locale)
   const t = await getTranslations()
+  const dateFmt = await getDateFormatPrefs()
 
   const supabase = getSupabaseAnonClient()
   const { data: events } = await supabase
@@ -48,7 +50,7 @@ export default async function HomePage({ params }) {
                     <div className={styles.cardBody}>
                       <h3>{lt(event.name, locale, event.default_locale)}</h3>
                       <p className={styles.cardMeta}>
-                        {formatEventDateRange(event.starts_at, event.ends_at, event.timezone, locale)}
+                        {formatEventDateRange(event.starts_at, event.ends_at, event.timezone, locale, dateFmt)}
                       </p>
                       {lt(event.location, locale, event.default_locale) && (
                         <p className={styles.cardMeta}>

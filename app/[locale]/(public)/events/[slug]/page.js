@@ -4,6 +4,7 @@ import { Link } from '@/lib/i18n/navigation'
 import { getSupabaseAnonClient } from '@/lib/supabase/server'
 import { lt, LOCALES } from '@/lib/i18n/locales'
 import { formatEventDate, formatEventDateRange } from '@/lib/dates'
+import { getDateFormatPrefs } from '@/lib/date-format-server'
 import styles from './event.module.css'
 
 export const revalidate = 300
@@ -38,6 +39,7 @@ export default async function EventPage({ params }) {
   const { slug, locale } = await params
   setRequestLocale(locale)
   const t = await getTranslations('event')
+  const dateFmt = await getDateFormatPrefs()
 
   const event = await getEvent(slug)
   if (!event) notFound()
@@ -67,7 +69,7 @@ export default async function EventPage({ params }) {
           <div>
             <dt>{t('when')}</dt>
             <dd>
-              {formatEventDateRange(event.starts_at, event.ends_at, event.timezone, locale)}
+              {formatEventDateRange(event.starts_at, event.ends_at, event.timezone, locale, dateFmt)}
             </dd>
           </div>
           {lt(event.location, locale, event.default_locale) && (
@@ -115,7 +117,7 @@ export default async function EventPage({ params }) {
           ) : notOpenYet ? (
             <p className="alert alert-info">
               {t('registrationNotOpen', {
-                date: formatEventDate(event.registration_opens_at, event.timezone, locale),
+                date: formatEventDate(event.registration_opens_at, event.timezone, locale, dateFmt),
               })}
             </p>
           ) : (
