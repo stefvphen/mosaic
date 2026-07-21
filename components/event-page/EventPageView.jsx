@@ -1,5 +1,6 @@
 'use client'
 
+import { Fragment } from 'react'
 import { useTranslations } from 'next-intl'
 import { lt } from '@/lib/i18n/locales'
 import { formatEventDate, formatEventDateRange } from '@/lib/dates'
@@ -17,6 +18,31 @@ import styles from './event-page-view.module.css'
 
 // Hero layout variants (used by the console editor's dropdown).
 export const HERO_VARIANTS = ['classic', 'split']
+
+// Body sections in their default order. The hero is always first and is not
+// part of this list. Organizers can reorder these via page_content.order.
+export const ORDERABLE_SECTIONS = [
+  'about',
+  'speakers',
+  'tracks',
+  'agenda',
+  'testimonials',
+  'gallery',
+  'faq',
+  'tickets',
+  'map',
+  'contact',
+]
+
+// Resolve the saved order, keeping only known keys and appending any that are
+// missing (e.g. sections added after the order was saved) in default order.
+export function resolveSectionOrder(content) {
+  const saved = Array.isArray(content?.order)
+    ? content.order.filter((k) => ORDERABLE_SECTIONS.includes(k))
+    : []
+  const missing = ORDERABLE_SECTIONS.filter((k) => !saved.includes(k))
+  return [...saved, ...missing]
+}
 
 // Style options shared with the console editor.
 export const HEADING_SIZES = {
@@ -291,6 +317,226 @@ export function EventPageView({ event, locale, registerHref, editable = false, o
     </>
   )
 
+  // Each body section keyed for order-driven rendering. Values are false-y when
+  // the section is hidden; the render loop skips those.
+  const sectionNodes = {
+    about: showAbout && (
+      <Section section="about" className={styles.about} style={sectionBg(about)} {...sectionProps}>
+        <div className={`container ${styles.aboutGrid}`}>
+          <div className={styles.aboutText}>
+            {heading(about, t('aboutDefault'))}
+            {L(about.body) && <p className={styles.aboutBody}>{L(about.body)}</p>}
+            {about.stats?.length > 0 && (
+              <div className={styles.stats}>
+                {about.stats.map((s, i) => {
+                  const hi = s.highlighted && s.highlight_color
+                  return (
+                    <div
+                      key={i}
+                      className={`${styles.stat} ${s.highlighted ? styles.statHighlight : ''}`}
+                      style={hi ? { background: s.highlight_color, borderColor: s.highlight_color } : undefined}
+                    >
+                      {(s.icon_path || s.icon) && (
+                        <span className={styles.statIcon}>
+                          {s.icon_path ? (
+                            /* eslint-disable-next-line @next/next/no-img-element */
+                            <img src={eventMediaUrl(s.icon_path)} alt="" />
+                          ) : (
+                            <StatIcon name={s.icon} />
+                          )}
+                        </span>
+                      )}
+                      <span className={styles.statText}>
+                        <strong>{s.value}</strong>
+                        <span>{L(s.label)}</span>
+                      </span>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+          {about.image_path && (
+            <div className={styles.aboutMedia}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={eventMediaUrl(about.image_path)} alt="" />
+            </div>
+          )}
+        </div>
+      </Section>
+    ),
+
+    speakers: showSpeakers && (
+      <Section section="speakers" className={styles.speakers} style={sectionBg(speakers)} {...sectionProps}>
+        <div className="container">
+          {heading(speakers, t('speakersDefault'))}
+          <div className={styles.speakerGrid}>
+            {speakers.items.map((sp) => (
+              <div key={sp.id} className={styles.speakerCard}>
+                {sp.photo_path ? (
+                  /* eslint-disable-next-line @next/next/no-img-element */
+                  <img src={eventMediaUrl(sp.photo_path)} alt={sp.name} />
+                ) : (
+                  <div className={styles.speakerPlaceholder} aria-hidden="true">
+                    {sp.name?.charAt(0) ?? '?'}
+                  </div>
+                )}
+                <div className={styles.speakerInfo}>
+                  <strong>{sp.name}</strong>
+                  {L(sp.role) && (
+                    <span
+                      className={styles.speakerRole}
+                      style={speakers.role_color ? { color: speakers.role_color } : undefined}
+                    >
+                      {L(sp.role)}
+                    </span>
+                  )}
+                  {sp.org && <span className={styles.speakerOrg}>{sp.org}</span>}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </Section>
+    ),
+
+    tracks: (
+      <TracksSection
+        content={tracks}
+        locale={locale}
+        defaultLocale={dl}
+        editable={editable}
+        onEditSection={onEditSection}
+      />
+    ),
+
+    agenda: showAgenda && (
+      <Section id="agenda" section="agenda" className={styles.agenda} style={sectionBg(agenda)} {...sectionProps}>
+        <div className="container-narrow">
+          {heading(agenda, t('agendaDefault'), true)}
+          {agenda.image_path && (
+            <div className={styles.agendaMedia}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={eventMediaUrl(agenda.image_path)} alt="" />
+            </div>
+          )}
+          {agenda.items?.length > 0 && (
+            <ol className={styles.agendaList}>
+              {agenda.items.map((item) => (
+                <li key={item.id} className={styles.agendaItem}>
+                  <div className={styles.agendaMarker} aria-hidden="true" />
+                  <div className={styles.agendaBody}>
+                    <h3>{L(item.title)}</h3>
+                    {L(item.time) && <p className={styles.agendaTime}>{L(item.time)}</p>}
+                    {L(item.description) && <p>{L(item.description)}</p>}
+                  </div>
+                </li>
+              ))}
+            </ol>
+          )}
+        </div>
+      </Section>
+    ),
+
+    testimonials: (
+      <TestimonialsSection
+        content={testimonials}
+        locale={locale}
+        defaultLocale={dl}
+        editable={editable}
+        onEditSection={onEditSection}
+      />
+    ),
+
+    gallery: (
+      <GallerySection
+        content={gallery}
+        locale={locale}
+        defaultLocale={dl}
+        editable={editable}
+        onEditSection={onEditSection}
+      />
+    ),
+
+    tickets: showTickets && (
+      <Section id="tickets" section="tickets" className={styles.tickets} style={sectionBg(tickets)} {...sectionProps}>
+        <div className="container">
+          {heading(tickets, t('ticketsDefault'), true)}
+          <div className={styles.tierGrid}>
+            {tickets.items.map((tier) => {
+              const highlightStyle =
+                tier.highlighted && tickets.highlight_color
+                  ? { background: tickets.highlight_color, borderColor: tickets.highlight_color }
+                  : undefined
+              return (
+                <div
+                  key={tier.id}
+                  className={`${styles.tier} ${tier.highlighted ? styles.tierHighlight : ''}`}
+                  style={highlightStyle}
+                >
+                  {L(tier.badge) && <span className={styles.tierBadge}>{L(tier.badge)}</span>}
+                  <span className={styles.tierName}>{L(tier.name)}</span>
+                  <span className={styles.tierPrice}>{tier.price}</span>
+                  {L(tier.features) && (
+                    <ul className={styles.tierFeatures}>
+                      {L(tier.features)
+                        .split('\n')
+                        .filter((f) => f.trim())
+                        .map((f, i) => (
+                          <li key={i}>{f}</li>
+                        ))}
+                    </ul>
+                  )}
+                  {!closed && !notOpenYet && registerButton}
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      </Section>
+    ),
+
+    faq: (
+      <FaqSection
+        content={faq}
+        locale={locale}
+        defaultLocale={dl}
+        editable={editable}
+        onEditSection={onEditSection}
+      />
+    ),
+
+    map: (
+      <MapSection
+        content={mapSection}
+        locale={locale}
+        defaultLocale={dl}
+        editable={editable}
+        onEditSection={onEditSection}
+      />
+    ),
+
+    contact: hasContact && (
+      <Section section="contact" className={styles.contact} style={sectionBg(contactSection)} {...sectionProps}>
+        <div className={`container-narrow ${styles.contactInner}`}>
+          <h2 className={styles.sectionTitle}>{t('contact')}</h2>
+          <div className={styles.contactList}>
+            {contact.name && <span>{contact.name}</span>}
+            {contact.email && <a href={`mailto:${contact.email}`}>{contact.email}</a>}
+            {contact.phone && <a href={`tel:${contact.phone}`}>{contact.phone}</a>}
+            {contact.website && (
+              <a href={contact.website} target="_blank" rel="noreferrer">
+                {contact.website}
+              </a>
+            )}
+          </div>
+        </div>
+      </Section>
+    ),
+  }
+
+  const sectionOrder = resolveSectionOrder(content)
+
   return (
     <div
       className={styles.page}
@@ -344,215 +590,11 @@ export function EventPageView({ event, locale, registerHref, editable = false, o
         </Section>
       )}
 
-      {/* ---- About ---- */}
-      {showAbout && (
-        <Section section="about" className={styles.about} style={sectionBg(about)} {...sectionProps}>
-          <div className={`container ${styles.aboutGrid}`}>
-            <div className={styles.aboutText}>
-              {heading(about, t('aboutDefault'))}
-              {L(about.body) && <p className={styles.aboutBody}>{L(about.body)}</p>}
-              {about.stats?.length > 0 && (
-                <div className={styles.stats}>
-                  {about.stats.map((s, i) => {
-                    const hi = s.highlighted && s.highlight_color
-                    return (
-                      <div
-                        key={i}
-                        className={`${styles.stat} ${s.highlighted ? styles.statHighlight : ''}`}
-                        style={hi ? { background: s.highlight_color, borderColor: s.highlight_color } : undefined}
-                      >
-                        {(s.icon_path || s.icon) && (
-                          <span className={styles.statIcon}>
-                            {s.icon_path ? (
-                              /* eslint-disable-next-line @next/next/no-img-element */
-                              <img src={eventMediaUrl(s.icon_path)} alt="" />
-                            ) : (
-                              <StatIcon name={s.icon} />
-                            )}
-                          </span>
-                        )}
-                        <span className={styles.statText}>
-                          <strong>{s.value}</strong>
-                          <span>{L(s.label)}</span>
-                        </span>
-                      </div>
-                    )
-                  })}
-                </div>
-              )}
-            </div>
-            {about.image_path && (
-              <div className={styles.aboutMedia}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={eventMediaUrl(about.image_path)} alt="" />
-              </div>
-            )}
-          </div>
-        </Section>
-      )}
+      {/* Body sections, in the organizer-configured order */}
+      {sectionOrder.map((key) => (
+        <Fragment key={key}>{sectionNodes[key]}</Fragment>
+      ))}
 
-      {/* ---- Speakers ---- */}
-      {showSpeakers && (
-        <Section section="speakers" className={styles.speakers} style={sectionBg(speakers)} {...sectionProps}>
-          <div className="container">
-            {heading(speakers, t('speakersDefault'))}
-            <div className={styles.speakerGrid}>
-              {speakers.items.map((sp) => (
-                <div key={sp.id} className={styles.speakerCard}>
-                  {sp.photo_path ? (
-                    /* eslint-disable-next-line @next/next/no-img-element */
-                    <img src={eventMediaUrl(sp.photo_path)} alt={sp.name} />
-                  ) : (
-                    <div className={styles.speakerPlaceholder} aria-hidden="true">
-                      {sp.name?.charAt(0) ?? '?'}
-                    </div>
-                  )}
-                  <div className={styles.speakerInfo}>
-                    <strong>{sp.name}</strong>
-                    {L(sp.role) && (
-                      <span
-                        className={styles.speakerRole}
-                        style={speakers.role_color ? { color: speakers.role_color } : undefined}
-                      >
-                        {L(sp.role)}
-                      </span>
-                    )}
-                    {sp.org && <span className={styles.speakerOrg}>{sp.org}</span>}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </Section>
-      )}
-
-      {/* ---- Tracks ---- */}
-      <TracksSection
-        content={tracks}
-        locale={locale}
-        defaultLocale={dl}
-        editable={editable}
-        onEditSection={onEditSection}
-      />
-
-      {/* ---- Agenda ---- */}
-      {showAgenda && (
-        <Section id="agenda" section="agenda" className={styles.agenda} style={sectionBg(agenda)} {...sectionProps}>
-          <div className="container-narrow">
-            {heading(agenda, t('agendaDefault'), true)}
-            {agenda.image_path && (
-              <div className={styles.agendaMedia}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={eventMediaUrl(agenda.image_path)} alt="" />
-              </div>
-            )}
-            {agenda.items?.length > 0 && (
-              <ol className={styles.agendaList}>
-                {agenda.items.map((item) => (
-                  <li key={item.id} className={styles.agendaItem}>
-                    <div className={styles.agendaMarker} aria-hidden="true" />
-                    <div className={styles.agendaBody}>
-                      <h3>{L(item.title)}</h3>
-                      {L(item.time) && <p className={styles.agendaTime}>{L(item.time)}</p>}
-                      {L(item.description) && <p>{L(item.description)}</p>}
-                    </div>
-                  </li>
-                ))}
-              </ol>
-            )}
-          </div>
-        </Section>
-      )}
-
-      {/* ---- Testimonials & Gallery ---- */}
-      <TestimonialsSection
-        content={testimonials}
-        locale={locale}
-        defaultLocale={dl}
-        editable={editable}
-        onEditSection={onEditSection}
-      />
-      <GallerySection
-        content={gallery}
-        locale={locale}
-        defaultLocale={dl}
-        editable={editable}
-        onEditSection={onEditSection}
-      />
-
-      {/* ---- Tickets ---- */}
-      {showTickets && (
-        <Section id="tickets" section="tickets" className={styles.tickets} style={sectionBg(tickets)} {...sectionProps}>
-          <div className="container">
-            {heading(tickets, t('ticketsDefault'), true)}
-            <div className={styles.tierGrid}>
-              {tickets.items.map((tier) => {
-                const highlightStyle =
-                  tier.highlighted && tickets.highlight_color
-                    ? { background: tickets.highlight_color, borderColor: tickets.highlight_color }
-                    : undefined
-                return (
-                  <div
-                    key={tier.id}
-                    className={`${styles.tier} ${tier.highlighted ? styles.tierHighlight : ''}`}
-                    style={highlightStyle}
-                  >
-                    {L(tier.badge) && <span className={styles.tierBadge}>{L(tier.badge)}</span>}
-                    <span className={styles.tierName}>{L(tier.name)}</span>
-                    <span className={styles.tierPrice}>{tier.price}</span>
-                    {L(tier.features) && (
-                      <ul className={styles.tierFeatures}>
-                        {L(tier.features)
-                          .split('\n')
-                          .filter((f) => f.trim())
-                          .map((f, i) => (
-                            <li key={i}>{f}</li>
-                          ))}
-                      </ul>
-                    )}
-                    {!closed && !notOpenYet && registerButton}
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        </Section>
-      )}
-
-      {/* ---- FAQ & Map ---- */}
-      <FaqSection
-        content={faq}
-        locale={locale}
-        defaultLocale={dl}
-        editable={editable}
-        onEditSection={onEditSection}
-      />
-      <MapSection
-        content={mapSection}
-        locale={locale}
-        defaultLocale={dl}
-        editable={editable}
-        onEditSection={onEditSection}
-      />
-
-      {/* ---- Contact ---- */}
-      {hasContact && (
-        <Section section="contact" className={styles.contact} style={sectionBg(contactSection)} {...sectionProps}>
-          <div className={`container-narrow ${styles.contactInner}`}>
-            <h2 className={styles.sectionTitle}>{t('contact')}</h2>
-            <div className={styles.contactList}>
-              {contact.name && <span>{contact.name}</span>}
-              {contact.email && <a href={`mailto:${contact.email}`}>{contact.email}</a>}
-              {contact.phone && <a href={`tel:${contact.phone}`}>{contact.phone}</a>}
-              {contact.website && (
-                <a href={contact.website} target="_blank" rel="noreferrer">
-                  {contact.website}
-                </a>
-              )}
-            </div>
-          </div>
-        </Section>
-      )}
     </div>
   )
 }

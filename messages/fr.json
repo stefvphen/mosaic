@@ -327,7 +327,11 @@
     "addFaq": "Ajouter une question",
     "mapAddress": "Adresse",
     "mapEmbedUrl": "URL d'intégration Google Maps",
-    "mapEmbedHelp": "Dans Google Maps : Partager → Intégrer une carte → copiez l'URL src=\"...\"."
+    "mapEmbedHelp": "Dans Google Maps : Partager → Intégrer une carte → copiez l'URL src=\"...\".",
+    "sectionOrder": "Ordre des sections",
+    "sectionOrderHelp": "Réorganisez l'ordre des sections sur la page. L'en-tête reste toujours en haut.",
+    "moveUp": "Monter",
+    "moveDown": "Descendre"
   },
   "questionTypes": {
     "text": "Texte court",

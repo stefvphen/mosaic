@@ -219,6 +219,31 @@
   align-content: start;
 }
 
+/* Section reorder list */
+.orderList {
+  display: grid;
+  gap: var(--s-1);
+}
+
+.orderRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-2);
+  padding: var(--s-2) var(--s-3);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--surface-sunken);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.orderBtns {
+  display: flex;
+  gap: var(--s-1);
+  flex-shrink: 0;
+}
+
 /* Two color pickers side by side (page bg + text color, chip bg + text). */
 .colorPair {
   display: grid;

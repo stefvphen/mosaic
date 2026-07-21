@@ -327,7 +327,11 @@
     "addFaq": "Добавить вопрос",
     "mapAddress": "Адрес",
     "mapEmbedUrl": "URL встраивания Google Maps",
-    "mapEmbedHelp": "В Google Maps: Поделиться → Встроить карту → скопируйте URL из src=\"...\"."
+    "mapEmbedHelp": "В Google Maps: Поделиться → Встроить карту → скопируйте URL из src=\"...\".",
+    "sectionOrder": "Порядок разделов",
+    "sectionOrderHelp": "Измените порядок разделов на странице. Шапка всегда остаётся сверху.",
+    "moveUp": "Вверх",
+    "moveDown": "Вниз"
   },
   "questionTypes": {
     "text": "Короткий текст",

@@ -7,7 +7,11 @@ import { getSupabaseBrowserClient } from '@/lib/supabase/client'
 import { LOCALES, LOCALE_NAMES } from '@/lib/i18n/locales'
 import { eventMediaUrl } from '@/lib/storage'
 import { Button, CheckboxRow, Field, Input, NativeSelect, Textarea } from '@/components/ui'
-import { EventPageView, FONT_CHOICES } from '@/components/event-page/EventPageView'
+import {
+  EventPageView,
+  FONT_CHOICES,
+  resolveSectionOrder,
+} from '@/components/event-page/EventPageView'
 import { StatIcon, STAT_ICON_KEYS } from '@/components/event-page/stat-icons'
 import styles from './event-page.module.css'
 
@@ -459,6 +463,21 @@ export function EventPageEditor({ initialEvent }) {
     />
   )
 
+  // Swap a body section with its neighbor in the configured order.
+  function moveSection(key, dir) {
+    const order = resolveSectionOrder(content)
+    const i = order.indexOf(key)
+    const j = i + dir
+    if (i < 0 || j < 0 || j >= order.length) return
+    const next = [...order]
+    ;[next[i], next[j]] = [next[j], next[i]]
+    setEvent((prev) => ({
+      ...prev,
+      page_content: { ...(prev.page_content ?? {}), order: next },
+    }))
+    markDirty()
+  }
+
   // Set every section heading to one color in a single update.
   function applyColorToAllHeadings(color) {
     if (!color) return
@@ -575,6 +594,36 @@ export function EventPageEditor({ initialEvent }) {
             defaultValue={isDark ? '#ffffff' : '#000000'}
             onChange={(c) => setTheme({ btn_text: c ?? undefined })}
           />
+        </div>
+
+        <h4 className={styles.panelSubhead}>{t('sectionOrder')}</h4>
+        <p className="field-help">{t('sectionOrderHelp')}</p>
+        <div className={styles.orderList}>
+          {resolveSectionOrder(content).map((key, i, arr) => (
+            <div key={key} className={styles.orderRow}>
+              <span>{t(`section_${key}`)}</span>
+              <div className={styles.orderBtns}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  aria-label={t('moveUp')}
+                  disabled={i === 0}
+                  onClick={() => moveSection(key, -1)}
+                >
+                  ↑
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  aria-label={t('moveDown')}
+                  disabled={i === arr.length - 1}
+                  onClick={() => moveSection(key, 1)}
+                >
+                  ↓
+                </Button>
+              </div>
+            </div>
+          ))}
         </div>
       </>
     )
