@@ -325,8 +325,6 @@
     "fullName": "Nombre completo",
     "language": "Idioma preferido",
     "saved": "Guardado",
-    "namePromptTitle": "¿Cómo te llamas?",
-    "namePromptIntro": "Añade tu nombre para que los organizadores sepan quién eres. Puedes cambiarlo más tarde en tu perfil.",
     "firstName": "Nombre",
     "lastName": "Apellidos",
     "namePromptRequired": "Introduce tu nombre y apellidos.",
@@ -342,7 +340,9 @@
     "timeFormatHelp": "Reloj de 12 o 24 horas.",
     "dateFormat_auto": "Automático",
     "timeFormat_auto": "Automático",
-    "formatPromptIntro": "¿Cómo deben verse las fechas y horas? Puedes cambiarlo en tu perfil cuando quieras."
+    "formatPromptIntro": "¿Cómo deben verse las fechas y horas? Puedes cambiarlo en tu perfil cuando quieras.",
+    "welcomeTitle": "Bienvenido a Mosaic",
+    "welcomeNameIntro": "Añade tu nombre para que los organizadores sepan quién eres. Puedes cambiarlo más tarde en tu perfil."
   },
   "runtime": {
     "firstName": "Nombre",
