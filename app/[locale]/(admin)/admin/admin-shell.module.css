@@ -77,6 +77,24 @@
   inline-size: 16rem;
 }
 
+.inviteRow {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  flex-wrap: wrap;
+}
+
+.inviteRow input[type='email'] {
+  inline-size: 18rem;
+}
+
+.inviteHelp {
+  flex-basis: 100%;
+  color: var(--ink-soft);
+  font-size: var(--text-xs);
+  margin: 0;
+}
+
 .rowActions {
   display: flex;
   align-items: center;

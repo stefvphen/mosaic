@@ -43,7 +43,9 @@
     "heroTitle": "Cada inscripción, una sola imagen",
     "heroSubtitle": "Conferencias, campamentos y encuentros: encuentra tu evento e inscríbete en tu idioma.",
     "upcomingEvents": "Próximos eventos",
-    "noEvents": "Aún no hay eventos publicados. Vuelve pronto."
+    "noEvents": "Aún no hay eventos publicados. Vuelve pronto.",
+    "searchEvents": "Buscar eventos",
+    "noSearchResults": "Ningún evento coincide con tu búsqueda."
   },
   "event": {
     "register": "Inscribirse",
@@ -281,6 +283,10 @@
     "viewDetail": "Ver",
     "participantDetail": "Detalles del participante",
     "noMyEvents": "Aún no has creado ni te has unido a ningún evento. Crea tu primer evento para empezar.",
+    "addByEmail": "Añadir por correo electrónico",
+    "addByEmailHelp": "Concede un rol global por correo electrónico. La persona debe haber iniciado sesión en Mosaic al menos una vez.",
+    "add": "Añadir",
+    "roleGranted": "Rol concedido. Se está enviando un correo de notificación.",
     "eventCode": "Código del evento",
     "eventCodeHelp": "Comparte este código para que otras personas puedan solicitar unirse a este evento.",
     "copy": "Copiar",

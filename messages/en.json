@@ -43,7 +43,9 @@
     "heroTitle": "Every registration, one picture",
     "heroSubtitle": "Conferences, camps and gatherings — find your event and register in your language.",
     "upcomingEvents": "Upcoming events",
-    "noEvents": "No published events yet. Check back soon."
+    "noEvents": "No published events yet. Check back soon.",
+    "searchEvents": "Search events",
+    "noSearchResults": "No events match your search."
   },
   "event": {
     "register": "Register",
@@ -281,6 +283,10 @@
     "viewDetail": "View",
     "participantDetail": "Participant details",
     "noMyEvents": "You haven't created or joined any events yet. Create your first event to get started.",
+    "addByEmail": "Add by email",
+    "addByEmailHelp": "Grant a global role by email. The person must have signed in to Mosaic at least once.",
+    "add": "Add",
+    "roleGranted": "Role granted. A notification email is on its way.",
     "eventCode": "Event code",
     "eventCodeHelp": "Share this code so people can request to join this event.",
     "copy": "Copy",

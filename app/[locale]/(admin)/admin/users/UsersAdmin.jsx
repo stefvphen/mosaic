@@ -14,6 +14,9 @@ export function UsersAdmin({ users, currentUserId, isSuperAdmin }) {
 
   const [search, setSearch] = useState('')
   const [error, setError] = useState(null)
+  const [notice, setNotice] = useState(null)
+  const [inviteEmail, setInviteEmail] = useState('')
+  const [inviteRole, setInviteRole] = useState('organizer')
 
   const q = search.trim().toLowerCase()
   const visibleUsers = q
@@ -29,6 +32,31 @@ export function UsersAdmin({ users, currentUserId, isSuperAdmin }) {
     const { error } = await promise
     if (error) setError(error.message)
     else router.refresh()
+  }
+
+  async function addByEmail(e) {
+    e.preventDefault()
+    const email = inviteEmail.trim().toLowerCase()
+    if (!email) return
+    setError(null)
+    setNotice(null)
+    const { error } = await supabase.rpc('grant_global_role', {
+      p_email: email,
+      p_role: inviteRole,
+    })
+    if (error) {
+      setError(error.message)
+      return
+    }
+    // Fire-and-forget notification email — don't block the UI on it.
+    fetch('/api/notify-role', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, role: inviteRole }),
+    }).catch(() => {})
+    setInviteEmail('')
+    setNotice(t('roleGranted'))
+    router.refresh()
   }
 
   async function changeGlobalRole(user, role) {
@@ -81,6 +109,30 @@ export function UsersAdmin({ users, currentUserId, isSuperAdmin }) {
         </div>
       </div>
       {error && <p className="alert alert-error">{error}</p>}
+      {notice && <p className="alert alert-info">{notice}</p>}
+      <form onSubmit={addByEmail} className={styles.inviteRow} aria-label={t('addByEmail')}>
+        <Input
+          type="email"
+          required
+          placeholder={t('addByEmail')}
+          value={inviteEmail}
+          onChange={(e) => setInviteEmail(e.target.value)}
+          aria-label={t('addByEmail')}
+        />
+        <NativeSelect
+          aria-label={t('globalRoleLabel')}
+          value={inviteRole}
+          onChange={(e) => setInviteRole(e.target.value)}
+          style={{ width: 'auto' }}
+        >
+          <option value="organizer">{t('roleGlobalOrganizer')}</option>
+          <option value="admin">{t('roleAdmin')}</option>
+        </NativeSelect>
+        <Button type="submit" size="sm">
+          {t('add')}
+        </Button>
+        <p className={styles.inviteHelp}>{t('addByEmailHelp')}</p>
+      </form>
       <div className="table-wrap">
         <table className="table">
           <thead>
