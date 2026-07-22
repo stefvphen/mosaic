@@ -6,6 +6,8 @@ import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-quer
 import { getSupabaseBrowserClient } from '@/lib/supabase/client'
 import { lt } from '@/lib/i18n/locales'
 import { formatStructuredAnswer } from '@/lib/form-engine/format'
+import { formatDateValue } from '@/lib/dates'
+import { useDateFormatPrefs } from '@/components/providers/DateFormatProvider'
 import { Badge, Button, Field, Input, NativeSelect } from '@/components/ui'
 import { ParticipantDetail } from './ParticipantDetail'
 import styles from './participants.module.css'
@@ -34,6 +36,7 @@ export function ParticipantsTable({
 }) {
   const t = useTranslations()
   const locale = useLocale()
+  const dateFmt = useDateFormatPrefs()
   const supabase = getSupabaseBrowserClient()
   const queryClient = useQueryClient()
 
@@ -214,7 +217,7 @@ export function ParticipantsTable({
                   <td>{lt(typeById.get(p.participant_type_id)?.name, locale)}</td>
                   <td><Badge tone={p.status}>{t(`status.${p.status}`)}</Badge></td>
                   {questions.slice(0, 6).map((q) => (
-                    <td key={q.id}>{formatAnswer(p.answers?.[q.id], q, locale)}</td>
+                    <td key={q.id}>{formatAnswer(p.answers?.[q.id], q, locale, dateFmt)}</td>
                   ))}
                   <td>
                     <div className={styles.rowActions}>
@@ -275,10 +278,11 @@ export function ParticipantsTable({
   )
 }
 
-function formatAnswer(value, question, locale) {
+function formatAnswer(value, question, locale, dateFmt) {
   if (value == null) return ''
   const structured = formatStructuredAnswer(question, value)
   if (structured !== null) return structured
+  if (question.type === 'date') return formatDateValue(value, locale, dateFmt)
   if (question.type === 'checkbox') return value ? '✓' : ''
   if (Array.isArray(value)) {
     return value

@@ -60,7 +60,21 @@
 
 .footerActions {
   display: flex;
+  align-items: center;
   gap: var(--s-3);
+}
+
+.saveStatus {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.5rem;
+}
+
+.slugWarnActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--s-2);
 }
 
 @media (max-width: 720px) {

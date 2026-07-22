@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslations } from 'next-intl'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { lt } from '@/lib/i18n/locales'
@@ -17,6 +18,7 @@ export function SortableQuestionCard({
   onSelect,
   onRemove,
 }) {
+  const t = useTranslations('console')
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: q.id })
 
@@ -61,6 +63,20 @@ export function SortableQuestionCard({
           {typeLabel}
           {q.visibleIf?.rules?.length ? ' · ⑂' : ''}
           {q.participantTypes?.length ? ` · ${q.participantTypes.join(', ')}` : ''}
+          {q.type === 'date' && (
+            <>
+              {' '}
+              <span
+                className="tip tip-right"
+                data-tip={t('dateFormatHint')}
+                tabIndex={0}
+                onClick={(e) => e.stopPropagation()}
+                aria-label={t('dateFormatHint')}
+              >
+                ⓘ
+              </span>
+            </>
+          )}
         </span>
         {/* Live preview of what a respondent sees; inert so clicks select the card. */}
         <div className={styles.questionPreview} inert>
