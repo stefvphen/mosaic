@@ -546,7 +546,9 @@
     "deviceMobile": "Móvil",
     "logoPlacement": "Ubicación del logo",
     "placementTop": "Arriba del encabezado",
-    "placementBottom": "Abajo del encabezado"
+    "placementBottom": "Abajo del encabezado",
+    "groupEventDetails": "Detalles del evento",
+    "groupHero": "Encabezado"
   },
   "questionTypes": {
     "text": "Texto corto",

@@ -546,7 +546,9 @@
     "deviceMobile": "Мобильный",
     "logoPlacement": "Размещение логотипа",
     "placementTop": "Вверху шапки",
-    "placementBottom": "Внизу шапки"
+    "placementBottom": "Внизу шапки",
+    "groupEventDetails": "Детали события",
+    "groupHero": "Шапка"
   },
   "questionTypes": {
     "text": "Короткий текст",

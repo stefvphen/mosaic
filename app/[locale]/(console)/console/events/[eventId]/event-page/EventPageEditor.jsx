@@ -17,7 +17,6 @@ import styles from './event-page.module.css'
 
 const SECTIONS = [
   'theme',
-  'basics',
   'hero',
   'about',
   'speakers',
@@ -948,9 +947,13 @@ export function EventPageEditor({ initialEvent }) {
   }
 
 
-  function renderBasics() {
+  function renderHero() {
+    const hero = content.hero ?? {}
+    const theme = content.theme ?? {}
+    const setTheme = (patch) => patchContent('theme', patch)
     return (
       <>
+        <h4 className={styles.panelSubhead}>{t('groupEventDetails')}</h4>
         <Field label={`${t('eventName')} (${previewLocale})`} required>
           {({ id }) => (
             <Input
@@ -987,16 +990,8 @@ export function EventPageEditor({ initialEvent }) {
             />
           )}
         </Field>
-      </>
-    )
-  }
 
-  function renderHero() {
-    const hero = content.hero ?? {}
-    const theme = content.theme ?? {}
-    const setTheme = (patch) => patchContent('theme', patch)
-    return (
-      <>
+        <h4 className={styles.panelSubhead}>{t('groupHero')}</h4>
         <div className={styles.colorField}>
           <span className="field-label">{t('heroLayout')}</span>
           <NativeSelect
@@ -1871,7 +1866,6 @@ export function EventPageEditor({ initialEvent }) {
 
   const sectionRenderers = {
     theme: renderTheme,
-    basics: renderBasics,
     hero: renderHero,
     about: renderAbout,
     speakers: renderSpeakers,
