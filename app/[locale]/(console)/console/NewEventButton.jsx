@@ -7,7 +7,7 @@ import { getSupabaseBrowserClient } from '@/lib/supabase/client'
 import { fromLocalInput } from '@/lib/dates'
 import { DEFAULT_PARTICIPANT_TYPE } from '@/lib/participant-type-presets'
 import { defaultFormQuestions } from '@/lib/form-defaults'
-import { Button, Dialog, Field, Input, NativeSelect } from '@/components/ui'
+import { Button, Dialog, Field, Input, DateTimeInput, NativeSelect } from '@/components/ui'
 import styles from './console.module.css'
 
 function slugify(name) {
@@ -98,32 +98,35 @@ export function NewEventButton({ label }) {
 
     if (insertError || !event) {
       // 42501 = RLS rejection: the account lacks a global organizer/admin role.
-      setError(insertError?.code === '42501' ? t('createNoAccess') : t('createError'))
+      setError(insertError.code === '42501' ? t('createRoleError') : t('createError'))
       setState('idle')
       return
     }
 
-    // Best-effort scaffolding: a default form and participant type so the
-    // event is registerable out of the box. Settings can change both.
+    // Default form definition: full name (required) + email (required).
     const { data: form } = await supabase
       .from('forms')
-      .insert({ event_id: event.id, title: 'Default form' })
+      .insert({
+        event_id: event.id,
+        slug: 'default',
+        title: { en: 'Registration' },
+        definition: {
+          schemaVersion: 1,
+          questions: defaultFormQuestions(),
+
+          sections: [],
+        },
+
+        is_published: true,
+      })
       .select('id')
       .single()
+
+    // Default participant type for the initial form.
     if (form) {
-      const { data: versionId } = await supabase.rpc('create_draft_version', {
-        p_form_id: form.id,
-      })
-      // New forms start with name + email questions (removable in the builder).
-      if (versionId) {
-        await supabase
-          .from('form_versions')
-          .update({ definition: { questions: defaultFormQuestions() } })
-          .eq('id', versionId)
-      }
       await supabase.from('participant_types').insert({
         event_id: event.id,
-        key: DEFAULT_PARTICIPANT_TYPE.key,
+        type_key: DEFAULT_PARTICIPANT_TYPE.key,
         name: DEFAULT_PARTICIPANT_TYPE.name,
         form_id: form.id,
         sort_order: 0,
@@ -162,23 +165,21 @@ export function NewEventButton({ label }) {
         <div className={styles.newEventDates}>
           <Field label={t('startsAt')} required>
             {({ id }) => (
-              <Input
+              <DateTimeInput
                 id={id}
-                type="datetime-local"
                 required
                 value={startsAt}
-                onChange={(e) => setStartsAt(e.target.value)}
+                onChange={(val) => setStartsAt(val)}
               />
             )}
           </Field>
           <Field label={t('endsAt')} required>
             {({ id }) => (
-              <Input
+              <DateTimeInput
                 id={id}
-                type="datetime-local"
                 required
                 value={endsAt}
-                onChange={(e) => setEndsAt(e.target.value)}
+                onChange={(val) => setEndsAt(val)}
               />
             )}
           </Field>
