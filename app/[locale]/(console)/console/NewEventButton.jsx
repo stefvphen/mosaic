@@ -7,7 +7,7 @@ import { getSupabaseBrowserClient } from '@/lib/supabase/client'
 import { fromLocalInput } from '@/lib/dates'
 import { DEFAULT_PARTICIPANT_TYPE } from '@/lib/participant-type-presets'
 import { defaultFormQuestions } from '@/lib/form-defaults'
-import { Button, Dialog, Field, Input, NativeSelect } from '@/components/ui'
+import { Button, Dialog, Field, Input, NativeSelect, PreferenceDateInput } from '@/components/ui'
 import styles from './console.module.css'
 
 function slugify(name) {
@@ -162,23 +162,23 @@ export function NewEventButton({ label }) {
         <div className={styles.newEventDates}>
           <Field label={t('startsAt')} required>
             {({ id }) => (
-              <Input
+              <PreferenceDateInput
                 id={id}
                 type="datetime-local"
                 required
                 value={startsAt}
-                onChange={(e) => setStartsAt(e.target.value)}
+                onChange={setStartsAt}
               />
             )}
           </Field>
           <Field label={t('endsAt')} required>
             {({ id }) => (
-              <Input
+              <PreferenceDateInput
                 id={id}
                 type="datetime-local"
                 required
                 value={endsAt}
-                onChange={(e) => setEndsAt(e.target.value)}
+                onChange={setEndsAt}
               />
             )}
           </Field>

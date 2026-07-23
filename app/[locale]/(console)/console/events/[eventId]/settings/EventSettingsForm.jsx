@@ -13,6 +13,7 @@ import {
   Dialog,
   Field,
   Input,
+  PreferenceDateInput,
   Textarea,
   NativeSelect,
   Tabs,
@@ -45,10 +46,37 @@ export function EventSettingsForm({ event, initialTypes, forms }) {
   const [typePickerOpen, setTypePickerOpen] = useState(false)
   const [saveState, setSaveState] = useState('idle')
   const [publishBurst, setPublishBurst] = useState(null)
+  const [slugWarnOpen, setSlugWarnOpen] = useState(false)
 
   const timezones = Intl.supportedValuesOf?.('timeZone') ?? ['UTC']
 
-  async function save() {
+  // Serialize the Save-button fields so we can tell whether there are unsaved
+  // edits (participant types persist immediately and are excluded). Slug is
+  // passed explicitly because "revert & save" writes a value the state hasn't
+  // caught up to yet.
+  function snapshot(slugValue = slug) {
+    return JSON.stringify([
+      name, description, location, slugValue, timezone,
+      startsAt, endsAt, regOpens, regCloses, capacity, visibility, contact,
+    ])
+  }
+  // Baseline = last known saved state. Initialized to the values first loaded
+  // from the event; reset after every successful save.
+  const [savedSnap, setSavedSnap] = useState(() => snapshot())
+  const dirty = snapshot() !== savedSnap
+
+  // Changing the slug breaks every existing link to this event's public page,
+  // so confirm before committing a change. An unchanged slug saves directly.
+  function requestSave() {
+    if (slug !== event.slug) {
+      setSlugWarnOpen(true)
+      return
+    }
+    save()
+  }
+
+  async function save(slugValue = slug) {
+    setSlugWarnOpen(false)
     setSaveState('saving')
     const { error } = await supabase
       .from('events')
@@ -56,7 +84,7 @@ export function EventSettingsForm({ event, initialTypes, forms }) {
         name,
         description,
         location,
-        slug,
+        slug: slugValue,
         timezone,
         starts_at: fromLocalInput(startsAt, timezone),
         ends_at: fromLocalInput(endsAt, timezone),
@@ -68,8 +96,19 @@ export function EventSettingsForm({ event, initialTypes, forms }) {
         supported_locales: LOCALES.filter((l) => (name[l] ?? '').trim() !== ''),
       })
       .eq('id', event.id)
-    setSaveState(error ? 'error' : 'saved')
-    if (!error) router.refresh()
+    if (error) {
+      setSaveState('error')
+      return
+    }
+    setSaveState('saved')
+    setSavedSnap(snapshot(slugValue))
+    router.refresh()
+  }
+
+  // Slug dialog: discard the slug edit (restore event.slug) and save the rest.
+  function revertSlugAndSave() {
+    setSlug(event.slug)
+    save(event.slug)
   }
 
   async function setStatus(status) {
@@ -158,7 +197,7 @@ export function EventSettingsForm({ event, initialTypes, forms }) {
 
       <section className="card card-pad">
         <div className={styles.grid2}>
-          <Field label={t('slug')}>
+          <Field label={t('slug')} help={t('slugHelp')}>
             {({ id }) => <Input id={id} value={slug} onChange={(e) => setSlug(e.target.value)} />}
           </Field>
           <Field label={t('timezone')}>
@@ -172,22 +211,22 @@ export function EventSettingsForm({ event, initialTypes, forms }) {
           </Field>
           <Field label={t('startsAt')}>
             {({ id }) => (
-              <Input id={id} type="datetime-local" value={startsAt} onChange={(e) => setStartsAt(e.target.value)} />
+              <PreferenceDateInput id={id} type="datetime-local" value={startsAt} onChange={setStartsAt} />
             )}
           </Field>
           <Field label={t('endsAt')}>
             {({ id }) => (
-              <Input id={id} type="datetime-local" value={endsAt} onChange={(e) => setEndsAt(e.target.value)} />
+              <PreferenceDateInput id={id} type="datetime-local" value={endsAt} onChange={setEndsAt} />
             )}
           </Field>
           <Field label={t('regOpens')}>
             {({ id }) => (
-              <Input id={id} type="datetime-local" value={regOpens} onChange={(e) => setRegOpens(e.target.value)} />
+              <PreferenceDateInput id={id} type="datetime-local" value={regOpens} onChange={setRegOpens} />
             )}
           </Field>
           <Field label={t('regCloses')}>
             {({ id }) => (
-              <Input id={id} type="datetime-local" value={regCloses} onChange={(e) => setRegCloses(e.target.value)} />
+              <PreferenceDateInput id={id} type="datetime-local" value={regCloses} onChange={setRegCloses} />
             )}
           </Field>
           <Field label={t('capacity')} help={t('capacityHelp')}>
@@ -344,8 +383,6 @@ export function EventSettingsForm({ event, initialTypes, forms }) {
 
       <div className={styles.footer}>
         <div className={styles.footerStatus} aria-live="polite">
-          {saveState === 'saved' && <span className="badge badge-confirmed">{t('saved')}</span>}
-          {saveState === 'error' && <span className="badge badge-cancelled">⚠</span>}
           {publishBurst && (
             <strong className="publish-flash" style={{ color: 'var(--success)' }}>
               {t('eventPublished')}
@@ -353,6 +390,18 @@ export function EventSettingsForm({ event, initialTypes, forms }) {
           )}
         </div>
         <div className={styles.footerActions}>
+          {/* Save status sits right next to the Save button so it's noticed. */}
+          <span className={styles.saveStatus} aria-live="polite">
+            {saveState === 'error' ? (
+              <span className="badge badge-cancelled">{t('saveFailed')}</span>
+            ) : dirty ? (
+              <span className="badge badge-waitlisted">{t('editsNotSaved')}</span>
+            ) : saveState === 'saved' ? (
+              <span key={savedSnap} className="badge badge-confirmed publish-flash">
+                {t('saved')}
+              </span>
+            ) : null}
+          </span>
           <span style={{ position: 'relative', display: 'inline-flex' }}>
             {event.status === 'draft' ? (
               <Button variant="secondary" onClick={() => setStatus('published')}>
@@ -365,11 +414,32 @@ export function EventSettingsForm({ event, initialTypes, forms }) {
             )}
             <ConfettiBurst burst={publishBurst} />
           </span>
-          <Button onClick={save} disabled={saveState === 'saving'}>
+          <Button onClick={requestSave} disabled={saveState === 'saving' || !dirty}>
             {tCommon('save')}
           </Button>
         </div>
       </div>
+
+      <Dialog
+        open={slugWarnOpen}
+        onOpenChange={setSlugWarnOpen}
+        title={t('slugWarnTitle')}
+      >
+        <p className={styles.sectionHelp} style={{ marginBottom: 'var(--s-4)' }}>
+          {t('slugWarnBody', { old: event.slug, next: slug })}
+        </p>
+        <div className={styles.slugWarnActions}>
+          <Dialog.Close asChild>
+            <Button variant="ghost">{tCommon('cancel')}</Button>
+          </Dialog.Close>
+          <Button variant="secondary" onClick={revertSlugAndSave} disabled={saveState === 'saving'}>
+            {t('slugWarnRevert')}
+          </Button>
+          <Button onClick={() => save()} disabled={saveState === 'saving'}>
+            {t('slugWarnConfirm')}
+          </Button>
+        </div>
+      </Dialog>
     </div>
   )
 }
