@@ -4,11 +4,12 @@ import { useState } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 import { useRouter } from '@/lib/i18n/navigation'
 import { getSupabaseBrowserClient } from '@/lib/supabase/client'
-import { LOCALES, LOCALE_NAMES } from '@/lib/i18n/locales'
+import { LOCALES, LOCALE_NAMES, eventLocales } from '@/lib/i18n/locales'
 import { toLocalInput, fromLocalInput } from '@/lib/dates'
 import { PARTICIPANT_TYPE_PRESETS, uniqueTypeKey } from '@/lib/participant-type-presets'
 import {
   Button,
+  Checkbox,
   ConfettiBurst,
   Dialog,
   Field,
@@ -33,6 +34,9 @@ export function EventSettingsForm({ event, initialTypes, forms }) {
   const [name, setName] = useState(event.name ?? {})
   const [description, setDescription] = useState(event.description ?? {})
   const [location, setLocation] = useState(event.location ?? {})
+  const [supportedLocales, setSupportedLocales] = useState(eventLocales(event))
+  const [defaultLocale, setDefaultLocale] = useState(event.default_locale ?? 'en')
+  const [contentTab, setContentTab] = useState(event.default_locale ?? 'en')
   const [slug, setSlug] = useState(event.slug)
   const [timezone, setTimezone] = useState(event.timezone)
   const [startsAt, setStartsAt] = useState(toLocalInput(event.starts_at, event.timezone))
@@ -58,6 +62,7 @@ export function EventSettingsForm({ event, initialTypes, forms }) {
     return JSON.stringify([
       name, description, location, slugValue, timezone,
       startsAt, endsAt, regOpens, regCloses, capacity, visibility, contact,
+      supportedLocales, defaultLocale,
     ])
   }
   // Baseline = last known saved state. Initialized to the values first loaded
@@ -73,6 +78,26 @@ export function EventSettingsForm({ event, initialTypes, forms }) {
       return
     }
     save()
+  }
+
+  // Add/remove a language from the event's supported set, keeping canonical
+  // LOCALES order. The default language is locked on and can't be removed.
+  function toggleLocale(l) {
+    if (l === defaultLocale) return
+    setSupportedLocales((prev) =>
+      prev.includes(l)
+        ? prev.filter((x) => x !== l)
+        : LOCALES.filter((x) => prev.includes(x) || x === l)
+    )
+  }
+
+  // Switching the default language pulls it into the supported set so an
+  // event can never default to a language it doesn't offer.
+  function changeDefaultLocale(l) {
+    setDefaultLocale(l)
+    setSupportedLocales((prev) =>
+      prev.includes(l) ? prev : LOCALES.filter((x) => prev.includes(x) || x === l)
+    )
   }
 
   async function save(slugValue = slug) {
@@ -93,7 +118,8 @@ export function EventSettingsForm({ event, initialTypes, forms }) {
         capacity: capacity === '' ? null : Number(capacity),
         visibility,
         contact,
-        supported_locales: LOCALES.filter((l) => (name[l] ?? '').trim() !== ''),
+        default_locale: defaultLocale,
+        supported_locales: supportedLocales,
       })
       .eq('id', event.id)
     if (error) {
@@ -150,19 +176,58 @@ export function EventSettingsForm({ event, initialTypes, forms }) {
   return (
     <div className={styles.wrap}>
       <section className="card card-pad">
-        {/* Localized content, one tab per locale */}
-        <Tabs defaultValue={event.default_locale}>
+        <h2 style={{ marginBottom: 'var(--s-2)' }}>{t('languages')}</h2>
+        <p className={styles.sectionHelp}>{t('languagesHelp')}</p>
+        <div className={styles.localeList}>
+          {LOCALES.map((l) => {
+            const checked = supportedLocales.includes(l)
+            const isDefault = l === defaultLocale
+            return (
+              <label key={l} className={styles.localeRow}>
+                <Checkbox
+                  checked={checked}
+                  disabled={isDefault}
+                  onCheckedChange={() => toggleLocale(l)}
+                />
+                <span>{LOCALE_NAMES[l]}</span>
+                {isDefault && <span className="badge">{t('defaultLanguage')}</span>}
+              </label>
+            )
+          })}
+        </div>
+        <Field label={t('defaultLanguage')} help={t('defaultLanguageHelp')}>
+          {({ id }) => (
+            <NativeSelect
+              id={id}
+              value={defaultLocale}
+              onChange={(e) => changeDefaultLocale(e.target.value)}
+              style={{ maxWidth: '16rem' }}
+            >
+              {supportedLocales.map((l) => (
+                <option key={l} value={l}>{LOCALE_NAMES[l]}</option>
+              ))}
+            </NativeSelect>
+          )}
+        </Field>
+      </section>
+
+      <section className="card card-pad">
+        {/* Localized content, one tab per supported locale */}
+        <Tabs
+          value={supportedLocales.includes(contentTab) ? contentTab : defaultLocale}
+          onValueChange={setContentTab}
+        >
           <TabsList>
-            {LOCALES.map((l) => (
+            {supportedLocales.map((l) => (
               <TabsTrigger key={l} value={l}>
                 {LOCALE_NAMES[l]}
               </TabsTrigger>
             ))}
           </TabsList>
-          {LOCALES.map((l) => (
+          {supportedLocales.map((l) => (
             <TabsContent key={l} value={l}>
               <div className={styles.grid} style={{ marginTop: 'var(--s-4)' }}>
-                <Field label={`${t('eventName')} (${l})`} required={l === event.default_locale}>
+                <Field label={`${t('eventName')} (${l})`} required={l === defaultLocale}>
                   {({ id }) => (
                     <Input
                       id={id}

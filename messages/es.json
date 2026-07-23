@@ -504,7 +504,11 @@
     "slugWarnConfirm": "Cambiar URL y guardar",
     "editsNotSaved": "Cambios sin guardar",
     "dateFormatHint": "Las fechas se muestran a cada persona en su formato de fecha preferido (configurado en su perfil).",
-    "slugWarnRevert": "Revertir URL y guardar"
+    "slugWarnRevert": "Revertir URL y guardar",
+    "languages": "Idiomas",
+    "languagesHelp": "Elige en qué idiomas se ofrecen este evento y su formulario de inscripción. Los asistentes pueden cambiar entre ellos; el idioma predeterminado se usa cuando falta una traducción.",
+    "defaultLanguage": "Idioma predeterminado",
+    "defaultLanguageHelp": "Se usa como alternativa cuando falta una traducción."
   },
   "questionTypes": {
     "text": "Texto corto",

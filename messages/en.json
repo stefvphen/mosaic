@@ -504,7 +504,11 @@
     "slugWarnConfirm": "Change URL & save",
     "editsNotSaved": "Edits not saved",
     "dateFormatHint": "Dates are shown to each person in their own preferred date format (set in their profile).",
-    "slugWarnRevert": "Revert URL slug & save"
+    "slugWarnRevert": "Revert URL slug & save",
+    "languages": "Languages",
+    "languagesHelp": "Choose which languages this event and its registration form are offered in. Attendees can switch between them; the default is used when a translation is missing.",
+    "defaultLanguage": "Default language",
+    "defaultLanguageHelp": "Used as a fallback wherever a translation is missing."
   },
   "questionTypes": {
     "text": "Short text",

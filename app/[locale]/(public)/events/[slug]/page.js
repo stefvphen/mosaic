@@ -1,7 +1,8 @@
 import { notFound } from 'next/navigation'
-import { setRequestLocale } from 'next-intl/server'
+import { setRequestLocale, getTranslations } from 'next-intl/server'
 import { getSupabaseAnonClient } from '@/lib/supabase/server'
-import { lt, LOCALES } from '@/lib/i18n/locales'
+import { lt, LOCALES, eventLocales } from '@/lib/i18n/locales'
+import { LocaleSwitcher } from '@/components/shell/LocaleSwitcher'
 import { EventPageView } from '@/components/event-page/EventPageView'
 
 export const revalidate = 300
@@ -35,15 +36,32 @@ export async function generateMetadata({ params }) {
 export default async function EventPage({ params }) {
   const { slug, locale } = await params
   setRequestLocale(locale)
+  const tCommon = await getTranslations('common')
 
   const event = await getEvent(slug)
   if (!event) notFound()
 
+  // Attendees choose among the languages this event is actually offered in.
+  const localeOptions = eventLocales(event)
+
   return (
-    <EventPageView
-      event={event}
-      locale={locale}
-      registerHref={`/${locale}/events/${slug}/register`}
-    />
+    <>
+      {localeOptions.length > 1 && (
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'flex-end',
+            padding: 'var(--s-3) var(--s-4) 0',
+          }}
+        >
+          <LocaleSwitcher label={tCommon('language')} locales={localeOptions} />
+        </div>
+      )}
+      <EventPageView
+        event={event}
+        locale={locale}
+        registerHref={`/${locale}/events/${slug}/register`}
+      />
+    </>
   )
 }

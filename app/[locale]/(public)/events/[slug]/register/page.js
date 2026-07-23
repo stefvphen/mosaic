@@ -2,7 +2,8 @@ import { notFound } from 'next/navigation'
 import { getTranslations, setRequestLocale } from 'next-intl/server'
 import { Link, redirect } from '@/lib/i18n/navigation'
 import { getSupabaseServerClient } from '@/lib/supabase/server'
-import { lt } from '@/lib/i18n/locales'
+import { lt, eventLocales } from '@/lib/i18n/locales'
+import { LocaleSwitcher } from '@/components/shell/LocaleSwitcher'
 import { RegistrationWizard } from '@/components/wizard/RegistrationWizard'
 
 export const dynamic = 'force-dynamic'
@@ -11,6 +12,7 @@ export default async function RegisterPage({ params }) {
   const { slug, locale } = await params
   setRequestLocale(locale)
   const t = await getTranslations('wizard')
+  const tCommon = await getTranslations('common')
 
   const supabase = await getSupabaseServerClient()
   const {
@@ -127,8 +129,15 @@ export default async function RegisterPage({ params }) {
         : null,
     }))
 
+  const localeOptions = eventLocales(event)
+
   return (
     <div className="container-narrow" style={{ paddingBlock: 'var(--s-6)' }}>
+      {localeOptions.length > 1 && (
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 'var(--s-3)' }}>
+          <LocaleSwitcher label={tCommon('language')} locales={localeOptions} />
+        </div>
+      )}
       <h1 className="page-title" style={{ marginBottom: 'var(--s-5)' }}>
         {t('title', { event: lt(event.name, locale, event.default_locale) })}
       </h1>
