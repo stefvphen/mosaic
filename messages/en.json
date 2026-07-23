@@ -548,7 +548,15 @@
     "placementTop": "Top of hero",
     "placementBottom": "Bottom of hero",
     "groupEventDetails": "Event Details",
-    "groupHero": "Hero"
+    "groupHero": "Hero",
+    "translateAll": "Auto-translate content",
+    "translating": "Translating…",
+    "translateAllHelp": "Fills empty language fields by translating your default-language text with AI. Existing text is kept. Review, then Save.",
+    "translateDone": "Translated. Review the other languages, then Save Page.",
+    "translateError": "Translation failed. Please try again.",
+    "translateNoKey": "Auto-translation isn't set up yet (missing API key). Ask your admin to add ANTHROPIC_API_KEY.",
+    "translateNoTargets": "Enable at least one other language first.",
+    "translateNothing": "Nothing to translate yet — add some text first."
   },
   "questionTypes": {
     "text": "Short text",

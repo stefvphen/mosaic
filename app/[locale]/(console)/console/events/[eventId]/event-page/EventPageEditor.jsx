@@ -61,6 +61,58 @@ const THEME_PRESETS = {
   },
 }
 
+// --- Machine translation of typed content -------------------------------
+// Localized fields are stored as {en: "...", es: "..."} maps. These helpers
+// walk the content, gather source-language strings, and write translations
+// back into empty target-language slots (never overwriting existing text).
+const LOCALE_SET = new Set(LOCALES)
+
+function isLocaleMap(v) {
+  if (!v || typeof v !== 'object' || Array.isArray(v)) return false
+  const keys = Object.keys(v)
+  return (
+    keys.length > 0 &&
+    keys.every((k) => LOCALE_SET.has(k)) &&
+    Object.values(v).every((x) => x == null || typeof x === 'string')
+  )
+}
+
+function collectSourceStrings(node, source, out) {
+  if (isLocaleMap(node)) {
+    const s = node[source]
+    if (s && s.trim()) out.add(s)
+    return
+  }
+  if (Array.isArray(node)) node.forEach((n) => collectSourceStrings(n, source, out))
+  else if (node && typeof node === 'object') {
+    Object.values(node).forEach((n) => collectSourceStrings(n, source, out))
+  }
+}
+
+// dict: { [target]: Map(sourceString -> translated) }. Returns a new node with
+// empty target slots filled.
+function applyTranslations(node, source, targets, dict) {
+  if (isLocaleMap(node)) {
+    const s = node[source]
+    if (!s || !s.trim()) return node
+    const next = { ...node }
+    for (const tgt of targets) {
+      if (!next[tgt] || !next[tgt].trim()) {
+        const tr = dict[tgt]?.get(s)
+        if (tr) next[tgt] = tr
+      }
+    }
+    return next
+  }
+  if (Array.isArray(node)) return node.map((n) => applyTranslations(n, source, targets, dict))
+  if (node && typeof node === 'object') {
+    const o = {}
+    for (const [k, v] of Object.entries(node)) o[k] = applyTranslations(v, source, targets, dict)
+    return o
+  }
+  return node
+}
+
 // Relative luminance → WCAG contrast ratio between two hex colors.
 function contrastRatio(a, b) {
   const lum = (hex) => {
@@ -286,6 +338,8 @@ export function EventPageEditor({ initialEvent }) {
   const [uploading, setUploading] = useState(0)
   const [uploadError, setUploadError] = useState('')
   const [saveErrorMsg, setSaveErrorMsg] = useState('')
+  const [translateState, setTranslateState] = useState('idle') // idle|working|done|error
+  const [translateMsg, setTranslateMsg] = useState('')
   const coverInputRef = useRef(null)
   const aboutImgInputRef = useRef(null)
   const agendaImgInputRef = useRef(null)
@@ -318,6 +372,70 @@ export function EventPageEditor({ initialEvent }) {
   function patchEvent(patch) {
     setEvent((prev) => ({ ...prev, ...patch }))
     markDirty()
+  }
+
+  // Fill empty target-language slots by machine-translating the default
+  // language's text. Applied to state; the user then saves.
+  async function translateAll(availableLocales) {
+    const source = event.default_locale
+    const targets = availableLocales.filter((l) => l !== source)
+    if (!targets.length) {
+      setTranslateState('error')
+      setTranslateMsg(t('translateNoTargets'))
+      return
+    }
+    const bundle = {
+      name: event.name,
+      description: event.description,
+      location: event.location,
+      page_content: event.page_content ?? {},
+    }
+    const set = new Set()
+    collectSourceStrings(bundle, source, set)
+    const strings = [...set]
+    if (!strings.length) {
+      setTranslateState('error')
+      setTranslateMsg(t('translateNothing'))
+      return
+    }
+    setTranslateState('working')
+    setTranslateMsg('')
+    try {
+      const res = await fetch('/api/translate-event', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ strings, source, targets }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        setTranslateState('error')
+        setTranslateMsg(data?.error === 'no_api_key' ? t('translateNoKey') : t('translateError'))
+        return
+      }
+      const dict = {}
+      for (const tgt of targets) {
+        const arr = data.translations?.[tgt]
+        if (Array.isArray(arr)) {
+          const m = new Map()
+          strings.forEach((s, i) => m.set(s, arr[i]))
+          dict[tgt] = m
+        }
+      }
+      const out = applyTranslations(bundle, source, targets, dict)
+      setEvent((prev) => ({
+        ...prev,
+        name: out.name,
+        description: out.description,
+        location: out.location,
+        page_content: out.page_content,
+      }))
+      markDirty()
+      setTranslateState('done')
+      setTranslateMsg(t('translateDone'))
+    } catch {
+      setTranslateState('error')
+      setTranslateMsg(t('translateError'))
+    }
   }
 
   // Functional updates: colors/text can change in quick succession, so always
@@ -913,6 +1031,22 @@ export function EventPageEditor({ initialEvent }) {
           />
         ))}
         <p className="field-help">{t('availableLanguagesHelp')}</p>
+        <Button
+          variant="secondary"
+          size="sm"
+          disabled={translateState === 'working'}
+          onClick={() => translateAll(availableLocales)}
+        >
+          {translateState === 'working' ? t('translating') : t('translateAll')}
+        </Button>
+        <p className="field-help">{t('translateAllHelp')}</p>
+        {translateMsg && (
+          <p
+            className={`alert ${translateState === 'error' ? 'alert-error' : 'alert-success'} ${styles.uploadNote}`}
+          >
+            {translateMsg}
+          </p>
+        )}
 
         {/* ---- Section order ---- */}
         <h4 className={styles.panelSubhead}>{t('sectionOrder')}</h4>

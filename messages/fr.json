@@ -548,7 +548,15 @@
     "placementTop": "Haut de l'en-tête",
     "placementBottom": "Bas de l'en-tête",
     "groupEventDetails": "Détails de l'événement",
-    "groupHero": "En-tête"
+    "groupHero": "En-tête",
+    "translateAll": "Traduire le contenu par IA",
+    "translating": "Traduction…",
+    "translateAllHelp": "Remplit les langues vides en traduisant votre texte de la langue par défaut avec l'IA. Le texte existant est conservé. Vérifiez puis enregistrez.",
+    "translateDone": "Traduit. Vérifiez les autres langues puis enregistrez la page.",
+    "translateError": "Échec de la traduction. Réessayez.",
+    "translateNoKey": "La traduction automatique n'est pas encore configurée (clé API manquante). Demandez à votre administrateur d'ajouter ANTHROPIC_API_KEY.",
+    "translateNoTargets": "Activez d'abord au moins une autre langue.",
+    "translateNothing": "Rien à traduire pour l'instant — ajoutez du texte d'abord."
   },
   "questionTypes": {
     "text": "Texte court",
