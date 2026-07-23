@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
 import { useRouter } from '@/lib/i18n/navigation'
 import { getSupabaseBrowserClient } from '@/lib/supabase/client'
-import { LOCALES, LOCALE_NAMES } from '@/lib/i18n/locales'
+import { LOCALE_NAMES, eventLocales } from '@/lib/i18n/locales'
 import { eventMediaUrl } from '@/lib/storage'
 import { Button, CheckboxRow, Field, Input, NativeSelect, Textarea } from '@/components/ui'
 import {
@@ -226,7 +226,7 @@ export function EventPageEditor({ initialEvent }) {
 
   const [event, setEvent] = useState({ page_content: {}, ...initialEvent })
   const [previewLocale, setPreviewLocale] = useState(
-    LOCALES.includes(uiLocale) ? uiLocale : initialEvent.default_locale
+    eventLocales(initialEvent).includes(uiLocale) ? uiLocale : initialEvent.default_locale
   )
   const [panelSection, setPanelSection] = useState(null) // null = closed
   const [dirty, setDirty] = useState(false)
@@ -253,6 +253,9 @@ export function EventPageEditor({ initialEvent }) {
 
   const publicUrl = `${origin}/${previewLocale}/events/${event.slug}`
   const content = event.page_content ?? {}
+  // Only the languages this event is offered in (chosen in Settings) are
+  // editable and previewable here.
+  const supportedLocales = eventLocales(event)
 
   // ---- state helpers -------------------------------------------------------
 
@@ -342,7 +345,8 @@ export function EventPageEditor({ initialEvent }) {
         contact: event.contact,
         cover_image_path: event.cover_image_path,
         page_content: event.page_content,
-        supported_locales: LOCALES.filter((l) => (event.name?.[l] ?? '').trim() !== ''),
+        // Owned by Settings; preserve it here rather than re-deriving.
+        supported_locales: supportedLocales,
       })
       .eq('id', event.id)
     if (error) {
@@ -1611,7 +1615,7 @@ export function EventPageEditor({ initialEvent }) {
           </Button>
           <p className={styles.hint}>{t('pagePreviewHint')}</p>
           <div className={styles.localeSwitch} role="tablist" aria-label="Preview language">
-            {LOCALES.map((l) => (
+            {supportedLocales.map((l) => (
               <button
                 key={l}
                 type="button"
