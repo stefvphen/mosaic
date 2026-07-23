@@ -4,7 +4,7 @@ import ExcelJS from 'exceljs'
 import { getSupabaseServerClient } from '@/lib/supabase/server'
 import { lt } from '@/lib/i18n/locales'
 import { formatStructuredAnswer } from '@/lib/form-engine/format'
-import { formatEventDate } from '@/lib/dates'
+import { formatEventDate, formatDateValue } from '@/lib/dates'
 import { normalizeDateFormat, normalizeTimeFormat } from '@/lib/date-format'
 
 export const runtime = 'nodejs'
@@ -98,7 +98,7 @@ export async function GET(request) {
         typeName.get(p.participant_type_id) ?? '',
         p.status,
         formatEventDate(p.created_at, event?.timezone ?? 'UTC', locale, dateFmt),
-        ...questions.map((question) => plainAnswer(p.answers?.[question.id], question, locale)),
+        ...questions.map((question) => plainAnswer(p.answers?.[question.id], question, locale, dateFmt)),
       ])
     }
     if (!data || data.length < PAGE) break
@@ -145,10 +145,11 @@ export async function GET(request) {
   })
 }
 
-function plainAnswer(value, question, locale) {
+function plainAnswer(value, question, locale, dateFmt) {
   if (value == null) return ''
   const structured = formatStructuredAnswer(question, value)
   if (structured !== null) return structured
+  if (question.type === 'date') return formatDateValue(value, locale, dateFmt)
   if (question.type === 'checkbox') return value ? 'yes' : 'no'
   if (Array.isArray(value)) {
     return value
