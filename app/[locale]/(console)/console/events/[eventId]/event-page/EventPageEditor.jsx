@@ -362,6 +362,28 @@ export function EventPageEditor({ initialEvent }) {
   const publicUrl = `${origin}/${previewLocale}/events/${event.slug}`
   const content = event.page_content ?? {}
 
+  // Languages this event is offered in. Always includes the default language;
+  // otherwise from the explicit list (i18n.available) or the locales that have
+  // an event name filled in. Kept in LOCALES order.
+  const availableLocales = (() => {
+    const explicit = content.i18n?.available
+    const base =
+      Array.isArray(explicit) && explicit.length
+        ? explicit
+        : LOCALES.filter((l) => (event.name?.[l] ?? '').trim() !== '')
+    const set = new Set(base.filter((l) => LOCALES.includes(l)))
+    set.add(event.default_locale)
+    return LOCALES.filter((l) => set.has(l))
+  })()
+
+  // If the previewed language is no longer available (e.g. just unchecked),
+  // fall back to the default language.
+  useEffect(() => {
+    if (!availableLocales.includes(previewLocale)) {
+      setPreviewLocale(event.default_locale)
+    }
+  }, [availableLocales, previewLocale, event.default_locale])
+
   // ---- state helpers -------------------------------------------------------
 
   function markDirty() {
@@ -757,14 +779,15 @@ export function EventPageEditor({ initialEvent }) {
     const theme = content.theme ?? {}
     const setTheme = (patch) => patchContent('theme', patch)
     const logo = content.logo ?? {}
-    const availableLocales =
-      Array.isArray(content.i18n?.available) && content.i18n.available.length
-        ? content.i18n.available
-        : LOCALES.filter((l) => (event.name?.[l] ?? '').trim() !== '')
+    // availableLocales is computed at component scope. Toggling always keeps
+    // the default language and stays in LOCALES order.
     const toggleLocale = (l) => {
-      const base = availableLocales.length ? availableLocales : [event.default_locale]
-      const next = base.includes(l) ? base.filter((x) => x !== l) : [...base, l]
-      patchContent('i18n', { available: next.length ? next : [event.default_locale] })
+      if (l === event.default_locale) return // default can't be removed
+      const set = new Set(availableLocales)
+      if (set.has(l)) set.delete(l)
+      else set.add(l)
+      set.add(event.default_locale)
+      patchContent('i18n', { available: LOCALES.filter((x) => set.has(x)) })
     }
     // Contrast check on the effective page text vs background.
     const bg = theme.page_bg || (isDark ? '#14161b' : '#ffffff')
@@ -2059,20 +2082,22 @@ export function EventPageEditor({ initialEvent }) {
               {t('deviceMobile')}
             </button>
           </div>
-          <div className={styles.localeSwitch} role="tablist" aria-label="Preview language">
-            {LOCALES.map((l) => (
-              <button
-                key={l}
-                type="button"
-                role="tab"
-                aria-selected={previewLocale === l}
-                data-active={previewLocale === l}
-                onClick={() => setPreviewLocale(l)}
-              >
-                {LOCALE_NAMES[l]}
-              </button>
-            ))}
-          </div>
+          {availableLocales.length > 1 && (
+            <div className={styles.localeSwitch} role="tablist" aria-label="Preview language">
+              {availableLocales.map((l) => (
+                <button
+                  key={l}
+                  type="button"
+                  role="tab"
+                  aria-selected={previewLocale === l}
+                  data-active={previewLocale === l}
+                  onClick={() => setPreviewLocale(l)}
+                >
+                  {LOCALE_NAMES[l]}
+                </button>
+              ))}
+            </div>
+          )}
           <div className={styles.saveStatus} aria-live="polite">
             {saveState === 'saved' && <span className="badge badge-confirmed">{t('saved')}</span>}
             {saveState === 'error' && <span className="badge badge-cancelled">{t('saveError')}</span>}
