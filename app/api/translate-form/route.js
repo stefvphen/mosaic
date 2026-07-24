@@ -1,9 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getSupabaseServerClient } from '@/lib/supabase/server'
-import { LOCALES } from '@/lib/i18n/locales'
+import { getTranslateLanguages } from '@/lib/i18n/translate-languages'
 import { applyLocalizedTranslations, collectLocalizedStrings } from '@/lib/form-localization'
-
-const SUPPORTED = new Set(LOCALES)
 
 function unescapeHtml(value) {
   return value
@@ -62,24 +60,28 @@ export async function POST(request) {
     return NextResponse.json({ error: 'bad_request' }, { status: 400 })
   }
 
+  // Gate against the languages Google actually supports (fetched + cached), so
+  // organizer-picked custom languages translate too — not just the built-ins.
+  const supported = new Set((await getTranslateLanguages()).map((l) => l.code))
+
   const { definition, source, targets } = body ?? {}
   if (
     !definition ||
     typeof definition !== 'object' ||
     typeof source !== 'string' ||
     !Array.isArray(targets) ||
-    !SUPPORTED.has(source)
+    !supported.has(source)
   ) {
     return NextResponse.json({ error: 'bad_request' }, { status: 400 })
   }
 
-  const targetList = targets.filter((target) => SUPPORTED.has(target) && target !== source)
+  const targetList = targets.filter((target) => supported.has(target) && target !== source)
   if (targetList.length === 0) {
     return NextResponse.json({ translatedDefinition: definition })
   }
 
   const sourceStrings = new Set()
-  collectLocalizedStrings(definition, source, sourceStrings)
+  collectLocalizedStrings(definition, source, sourceStrings, supported)
   const strings = [...sourceStrings]
   if (strings.length === 0) {
     return NextResponse.json({ translatedDefinition: definition })
@@ -106,6 +108,6 @@ export async function POST(request) {
   }
 
   return NextResponse.json({
-    translatedDefinition: applyLocalizedTranslations(definition, source, targetList, dict),
+    translatedDefinition: applyLocalizedTranslations(definition, source, targetList, dict, supported),
   })
 }
