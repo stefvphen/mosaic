@@ -2,7 +2,7 @@
 
 import { Fragment } from 'react'
 import { useTranslations } from 'next-intl'
-import { lt, LOCALES } from '@/lib/i18n/locales'
+import { lt, eventLocales } from '@/lib/i18n/locales'
 import { formatEventDate, formatEventDateRange } from '@/lib/dates'
 import { eventMediaUrl } from '@/lib/storage'
 import { StatIcon } from './stat-icons'
@@ -274,14 +274,9 @@ export function EventPageView({
   // Custom (organizer-defined) languages, e.g. { code: 'pt', name: 'Português' }.
   const customLangs = Array.isArray(content.i18n?.custom) ? content.i18n.custom : []
   const customCodes = customLangs.map((c) => c.code)
-  const validCodes = new Set([...LOCALES, ...customCodes])
-  const availableLocales = (
-    Array.isArray(content.i18n?.available) && content.i18n.available.length
-      ? content.i18n.available
-      : event.supported_locales?.length
-        ? event.supported_locales
-        : [dl]
-  ).filter((l) => validCodes.has(l))
+  // Shared with the editor and the rest of the console so every surface agrees
+  // on which languages the event offers.
+  const availableLocales = eventLocales(event)
   const showLangSwitch = availableLocales.length > 1
   const eventSlug = event.slug
   const isCustom = (code) => customCodes.includes(code)

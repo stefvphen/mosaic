@@ -571,7 +571,10 @@
     "addLanguageConfirm": "Add",
     "cancel": "Cancel",
     "languageNamePlaceholder": "Language name (e.g. Portuguese)",
-    "customLanguageHelp": "Custom languages: you fill in all the text yourself in a new tab. Fixed platform buttons stay in the default language."
+    "customLanguageHelp": "Custom languages: you fill in all the text yourself in a new tab. Fixed platform buttons stay in the default language.",
+    "languages": "Languages",
+    "languagesHelp": "Choose which languages this event and its registration form are offered in. Attendees can switch between them; the default is used when a translation is missing.",
+    "defaultLanguageHelp": "Used as a fallback wherever a translation is missing."
   },
   "questionTypes": {
     "text": "Short text",
