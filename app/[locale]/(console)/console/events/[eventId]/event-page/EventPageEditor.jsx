@@ -596,7 +596,16 @@ export function EventPageEditor({ initialEvent }) {
   }
 
   const MAX_UPLOAD_BYTES = 5 * 1024 * 1024
-  const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/avif']
+  const ALLOWED_TYPES = [
+    'image/jpeg',
+    'image/png',
+    'image/webp',
+    'image/avif',
+    'video/mp4',
+    'video/webm',
+    'video/ogg',
+    'video/quicktime',
+  ]
 
   async function upload(file, prefix) {
     setUploadError('')
@@ -604,13 +613,15 @@ export function EventPageEditor({ initialEvent }) {
       setUploadError(t('uploadBadType'))
       return null
     }
-    if (file.size > MAX_UPLOAD_BYTES) {
+    const isVideo = file.type.startsWith('video/')
+    const maxBytes = isVideo ? 30 * 1024 * 1024 : MAX_UPLOAD_BYTES
+    if (file.size > maxBytes) {
       setUploadError(t('uploadTooLarge'))
       return null
     }
     setUploading((n) => n + 1)
     try {
-      const ext = (file.name.split('.').pop() || 'jpg').toLowerCase()
+      const ext = (file.name.split('.').pop() || (isVideo ? 'mp4' : 'jpg')).toLowerCase()
       const path = `${event.id}/${prefix}-${Date.now().toString(36)}.${ext}`
       const { error } = await supabase.storage.from('event-covers').upload(path, file)
       if (error) {
@@ -635,8 +646,15 @@ export function EventPageEditor({ initialEvent }) {
   async function onAboutImgFile(e) {
     const file = e.target.files?.[0]
     if (file) {
-      const path = await upload(file, 'about')
-      if (path) patchContent('about', { enabled: true, image_path: path })
+      const isVideo = file.type.startsWith('video/')
+      const path = await upload(file, isVideo ? 'about-video' : 'about')
+      if (path) {
+        if (isVideo) {
+          patchContent('about', { enabled: true, video_url: path, image_path: null })
+        } else {
+          patchContent('about', { enabled: true, image_path: path, video_url: null })
+        }
+      }
     }
     e.target.value = ''
   }
@@ -1468,17 +1486,20 @@ export function EventPageEditor({ initialEvent }) {
             />
           )}
         </Field>
-        <input ref={aboutImgInputRef} type="file" accept="image/*" hidden onChange={onAboutImgFile} />
+        <input ref={aboutImgInputRef} type="file" accept="image/*,video/*" hidden onChange={onAboutImgFile} />
         {about.image_path && (
           /* eslint-disable-next-line @next/next/no-img-element */
           <img className={styles.panelThumb} src={eventMediaUrl(about.image_path)} alt="" />
         )}
+        {about.video_url && !/^https?:\/\//i.test(about.video_url) && (
+          <video className={styles.panelThumb} src={eventMediaUrl(about.video_url)} controls style={{ width: '100%', maxHeight: '150px', objectFit: 'contain' }} />
+        )}
         <div className={styles.panelRow}>
           <Button variant="secondary" size="sm" onClick={() => aboutImgInputRef.current?.click()}>
-            {about.image_path ? t('changeImage') : t('uploadImage')}
+            {about.image_path || about.video_url ? t('changeImageOrVideo') : t('uploadImageOrVideo')}
           </Button>
-          {about.image_path && (
-            <Button variant="ghost" size="sm" onClick={() => patchContent('about', { image_path: null })}>
+          {(about.image_path || about.video_url) && (
+            <Button variant="ghost" size="sm" onClick={() => patchContent('about', { image_path: null, video_url: null })}>
               {t('remove')}
             </Button>
           )}
@@ -1503,8 +1524,8 @@ export function EventPageEditor({ initialEvent }) {
               id={id}
               type="url"
               placeholder="https://www.youtube.com/watch?v=..."
-              value={about.video_url ?? ''}
-              onChange={(e) => patchContent('about', { video_url: e.target.value || undefined })}
+              value={about.video_url && /^https?:\/\//i.test(about.video_url) ? about.video_url : ''}
+              onChange={(e) => patchContent('about', { video_url: e.target.value || undefined, image_path: e.target.value ? null : about.image_path })}
             />
           )}
         </Field>

@@ -205,7 +205,11 @@ export function EventPageView({
     }
     return s
   }
-  const aboutVideo = videoEmbedSrc(about.video_url)
+  const aboutVideo = videoEmbedSrc(
+    about.video_url && !/^https?:\/\//i.test(about.video_url)
+      ? eventMediaUrl(about.video_url)
+      : about.video_url
+  )
   const showAbout =
     about.enabled && (L(about.body) || about.image_path || aboutVideo || about.stats?.length)
   const showSpeakers = speakers.enabled && speakers.items?.length > 0

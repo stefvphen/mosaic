@@ -360,6 +360,8 @@
     "addStat": "Añadir cifra",
     "uploadImage": "Subir imagen",
     "changeImage": "Cambiar imagen",
+    "uploadImageOrVideo": "Subir imagen o video",
+    "changeImageOrVideo": "Cambiar imagen o video",
     "coverHelp": "Se muestra como fondo del encabezado de la página.",
     "heroDescriptionHelp": "Introducción corta bajo el título.",
     "photo": "Foto",

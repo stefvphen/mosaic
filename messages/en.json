@@ -360,6 +360,8 @@
     "addStat": "Add Stat",
     "uploadImage": "Upload Image",
     "changeImage": "Change Image",
+    "uploadImageOrVideo": "Upload Image or Video",
+    "changeImageOrVideo": "Change Image or Video",
     "coverHelp": "Shown as the hero background at the top of the page.",
     "heroDescriptionHelp": "Short intro shown in the hero, under the title.",
     "photo": "Photo",
