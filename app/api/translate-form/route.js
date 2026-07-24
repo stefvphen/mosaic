@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
 import { getSupabaseServerClient } from '@/lib/supabase/server'
-import { LOCALES } from '@/lib/i18n/locales'
 import { getTranslateLanguages } from '@/lib/i18n/translate-languages'
 import { applyLocalizedTranslations, collectLocalizedStrings } from '@/lib/form-localization'
 
@@ -61,10 +60,11 @@ export async function POST(request) {
     return NextResponse.json({ error: 'bad_request' }, { status: 400 })
   }
 
-  const { definition, source, targets, locales } = body ?? {}
-  // Languages Google can translate (custom event languages are picked from
-  // this same list); cached, falls back to the built-in locales without a key.
+  // Gate against the languages Google actually supports (fetched + cached), so
+  // organizer-picked custom languages translate too — not just the built-ins.
   const supported = new Set((await getTranslateLanguages()).map((l) => l.code))
+
+  const { definition, source, targets, locales } = body ?? {}
   if (
     !definition ||
     typeof definition !== 'object' ||
@@ -83,9 +83,10 @@ export async function POST(request) {
     return NextResponse.json({ translatedDefinition: definition })
   }
 
-  // Locale keys to recognize inside the definition: built-ins + the event's
-  // custom languages, so maps like {en, pt} are collected and filled.
-  const allowed = new Set([...LOCALES, ...(Array.isArray(locales) ? locales : [])])
+  const validLocales = Array.isArray(locales)
+    ? locales.filter((locale) => typeof locale === 'string' && supported.has(locale))
+    : []
+  const allowed = new Set([...supported, ...validLocales])
 
   const sourceStrings = new Set()
   collectLocalizedStrings(definition, source, sourceStrings, allowed)

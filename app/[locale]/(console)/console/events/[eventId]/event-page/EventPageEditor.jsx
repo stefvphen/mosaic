@@ -67,32 +67,36 @@ const THEME_PRESETS = {
 // back into empty target-language slots (never overwriting existing text).
 const LOCALE_SET = new Set(LOCALES)
 
-function isLocaleMap(v) {
+// `codes` bounds which keys count as language codes. It defaults to the
+// built-in locales, but callers pass the event's full set (built-ins + custom
+// codes) so a field that already has a custom-language slot ({en, es, sq}) is
+// still recognized as translatable instead of being skipped.
+function isLocaleMap(v, codes = LOCALE_SET) {
   if (!v || typeof v !== 'object' || Array.isArray(v)) return false
   const keys = Object.keys(v)
   return (
     keys.length > 0 &&
-    keys.every((k) => LOCALE_SET.has(k)) &&
+    keys.every((k) => codes.has(k)) &&
     Object.values(v).every((x) => x == null || typeof x === 'string')
   )
 }
 
-function collectSourceStrings(node, source, out) {
-  if (isLocaleMap(node)) {
+function collectSourceStrings(node, source, out, codes = LOCALE_SET) {
+  if (isLocaleMap(node, codes)) {
     const s = node[source]
     if (s && s.trim()) out.add(s)
     return
   }
-  if (Array.isArray(node)) node.forEach((n) => collectSourceStrings(n, source, out))
+  if (Array.isArray(node)) node.forEach((n) => collectSourceStrings(n, source, out, codes))
   else if (node && typeof node === 'object') {
-    Object.values(node).forEach((n) => collectSourceStrings(n, source, out))
+    Object.values(node).forEach((n) => collectSourceStrings(n, source, out, codes))
   }
 }
 
 // dict: { [target]: Map(sourceString -> translated) }. Returns a new node with
 // empty target slots filled.
-function applyTranslations(node, source, targets, dict) {
-  if (isLocaleMap(node)) {
+function applyTranslations(node, source, targets, dict, codes = LOCALE_SET) {
+  if (isLocaleMap(node, codes)) {
     const s = node[source]
     if (!s || !s.trim()) return node
     const next = { ...node }
@@ -104,10 +108,10 @@ function applyTranslations(node, source, targets, dict) {
     }
     return next
   }
-  if (Array.isArray(node)) return node.map((n) => applyTranslations(n, source, targets, dict))
+  if (Array.isArray(node)) return node.map((n) => applyTranslations(n, source, targets, dict, codes))
   if (node && typeof node === 'object') {
     const o = {}
-    for (const [k, v] of Object.entries(node)) o[k] = applyTranslations(v, source, targets, dict)
+    for (const [k, v] of Object.entries(node)) o[k] = applyTranslations(v, source, targets, dict, codes)
     return o
   }
   return node
@@ -412,8 +416,12 @@ export function EventPageEditor({ initialEvent }) {
       location: event.location,
       page_content: event.page_content ?? {},
     }
+    // Recognize locale maps keyed by any of the event's languages — built-ins
+    // plus custom codes — so fields that already have a custom-language slot
+    // aren't skipped on subsequent translations.
+    const codes = new Set([...LOCALES, ...availableLocales])
     const set = new Set()
-    collectSourceStrings(bundle, source, set)
+    collectSourceStrings(bundle, source, set, codes)
     const strings = [...set]
     if (!strings.length) {
       setTranslateState('error')
@@ -443,7 +451,7 @@ export function EventPageEditor({ initialEvent }) {
           dict[tgt] = m
         }
       }
-      const out = applyTranslations(bundle, source, targets, dict)
+      const out = applyTranslations(bundle, source, targets, dict, codes)
       setEvent((prev) => ({
         ...prev,
         name: out.name,
@@ -454,6 +462,7 @@ export function EventPageEditor({ initialEvent }) {
       markDirty()
       setTranslateState('done')
       setTranslateMsg(t('translateDone'))
+      window.alert(t('translateFinished'))
     } catch {
       setTranslateState('error')
       setTranslateMsg(t('translateError'))
