@@ -6,6 +6,7 @@ import { lt } from '@/lib/i18n/locales'
 import { formatStructuredAnswer } from '@/lib/form-engine/format'
 import { formatEventDate, formatDateValue } from '@/lib/dates'
 import { normalizeDateFormat, normalizeTimeFormat } from '@/lib/date-format'
+import { applyParticipantFilters, applyParticipantSort } from '@/lib/participants-query'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -25,6 +26,15 @@ export async function GET(request) {
   const locale = url.searchParams.get('locale') ?? 'en'
   const status = url.searchParams.get('status')
   const typeId = url.searchParams.get('typeId')
+  const search = url.searchParams.get('q') ?? ''
+  const sort = { column: url.searchParams.get('sort'), dir: url.searchParams.get('dir') }
+  let answerFilters = {}
+  try {
+    const raw = url.searchParams.get('answers')
+    if (raw) answerFilters = JSON.parse(raw)
+  } catch {
+    // ignore malformed answer filters — export the unfiltered set
+  }
   if (!eventId) {
     return NextResponse.json({ error: 'eventId required' }, { status: 400 })
   }
@@ -84,10 +94,10 @@ export async function GET(request) {
       .from('participants')
       .select('first_name, last_name, email, status, answers, created_at, participant_type_id')
       .eq('event_id', eventId)
-      .order('created_at', { ascending: true })
       .range(from, from + PAGE - 1)
-    if (status) q = q.eq('status', status)
-    if (typeId) q = q.eq('participant_type_id', typeId)
+    // Same filters + sort as the console table, so the file matches the view.
+    q = applyParticipantFilters(q, { status, typeId, search, answerFilters }, questions)
+    q = applyParticipantSort(q, sort, questions)
     const { data, error } = await q
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
     for (const p of data ?? []) {

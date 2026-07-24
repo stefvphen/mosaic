@@ -5,6 +5,7 @@ import { useLocale, useTranslations } from 'next-intl'
 import { lt } from '@/lib/i18n/locales'
 import { visibleQuestions, appliesToType } from '@/lib/form-engine/visibility'
 import { validateParticipantAnswers } from '@/lib/form-engine/validate'
+import { formatStructuredAnswer } from '@/lib/form-engine/format'
 import { formatDateValue } from '@/lib/dates'
 import { useDateFormatPrefs } from '@/components/providers/DateFormatProvider'
 import { FormRenderer } from '@/components/form-runtime/FormRenderer'
@@ -188,6 +189,10 @@ export function ParticipantDetail({
 
 function renderAnswer(value, question, locale, t, dateFmt) {
   if (value == null || value === '') return '—'
+  // Structured answers (name / address / phone) are objects — render them as
+  // text instead of letting them fall through to String() → "[object Object]".
+  const structured = formatStructuredAnswer(question, value)
+  if (structured !== null) return structured || '—'
   if (question.type === 'date') return formatDateValue(value, locale, dateFmt) || '—'
   if (question.type === 'checkbox') return value ? t('status.confirmed') : '—'
   if (Array.isArray(value)) {

@@ -509,6 +509,7 @@
     "editsNotSaved": "Edits not saved",
     "dateFormatHint": "Dates are shown to each person in their own preferred date format (set in their profile).",
     "slugWarnRevert": "Revert URL slug & save",
+    "publishNeedsForm": "Publish at least one form before publishing the event.",
     "themePresets": "Theme Presets",
     "presetLight": "Light",
     "presetDark": "Dark",
@@ -580,7 +581,13 @@
     "imageSide": "Image Side",
     "imageSideRight": "Image right, text left",
     "imageSideLeft": "Image left, text right",
-    "imageSideHelp": "The image fills that whole half of the hero; the text takes the other half. For a consistent layout, upload a portrait-ish photo (e.g. 10×15 / 2:3)."
+    "imageSideHelp": "The image fills that whole half of the hero; the text takes the other half. For a consistent layout, upload a portrait-ish photo (e.g. 10×15 / 2:3).",
+    "customLanguages": "Custom Languages",
+    "noCustomLanguages": "No custom languages added yet.",
+    "addLanguagesInSettings": "Add or manage languages in Settings",
+    "languages": "Languages",
+    "languagesHelp": "Choose which languages this event and its registration form are offered in. Attendees can switch between them; the default is used when a translation is missing.",
+    "defaultLanguageHelp": "Used as a fallback wherever a translation is missing."
   },
   "questionTypes": {
     "text": "Short text",

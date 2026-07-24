@@ -509,6 +509,7 @@
     "editsNotSaved": "Cambios sin guardar",
     "dateFormatHint": "Las fechas se muestran a cada persona en su formato de fecha preferido (configurado en su perfil).",
     "slugWarnRevert": "Revertir URL y guardar",
+    "publishNeedsForm": "Publica al menos un formulario antes de publicar el evento.",
     "themePresets": "Temas predefinidos",
     "presetLight": "Claro",
     "presetDark": "Oscuro",
@@ -580,7 +581,13 @@
     "imageSide": "Lado de la imagen",
     "imageSideRight": "Imagen derecha, texto izquierda",
     "imageSideLeft": "Imagen izquierda, texto derecha",
-    "imageSideHelp": "La imagen llena esa mitad del encabezado; el texto ocupa la otra. Para un diseño consistente, sube una foto vertical (p. ej. 10×15 / 2:3)."
+    "imageSideHelp": "La imagen llena esa mitad del encabezado; el texto ocupa la otra. Para un diseño consistente, sube una foto vertical (p. ej. 10×15 / 2:3).",
+    "customLanguages": "Idiomas personalizados",
+    "noCustomLanguages": "Aún no se han añadido idiomas personalizados.",
+    "addLanguagesInSettings": "Añade o gestiona idiomas en Configuración",
+    "languages": "Idiomas",
+    "languagesHelp": "Elige en qué idiomas se ofrecen este evento y su formulario de inscripción. Los asistentes pueden cambiar entre ellos; el idioma predeterminado se usa cuando falta una traducción.",
+    "defaultLanguageHelp": "Se usa como alternativa cuando falta una traducción."
   },
   "questionTypes": {
     "text": "Texto corto",

@@ -25,7 +25,7 @@
 
 .typeRow {
   display: grid;
-  grid-template-columns: 1fr 1.4fr 0.7fr 1fr auto;
+  grid-template-columns: 1.4fr 0.7fr 1fr auto;
   gap: var(--s-3);
   align-items: end;
   padding: var(--s-3);
@@ -37,6 +37,52 @@
   color: var(--ink-soft);
   font-size: var(--text-sm);
   margin-bottom: var(--s-4);
+}
+
+.localeList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s-3) var(--s-5);
+  margin-bottom: var(--s-4);
+}
+
+.localeRow {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+}
+
+.customLangs {
+  display: grid;
+  gap: var(--s-2);
+  margin-top: var(--s-4);
+  max-width: 24rem;
+}
+
+.customLangRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-2);
+  padding: var(--s-2) var(--s-3);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--surface-sunken);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.addLangForm {
+  display: grid;
+  gap: var(--s-2);
+  padding: var(--s-3);
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--r-md);
+}
+
+.addLangActions {
+  display: flex;
+  gap: var(--s-2);
 }
 
 .presetList {

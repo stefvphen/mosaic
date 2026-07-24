@@ -36,6 +36,8 @@ export function FormBuilder({
   initialDefinition,
   participantTypes,
   defaultLocale,
+  supportedLocales,
+  localeNames,
 }) {
   const t = useTranslations('console')
   const tq = useTranslations('questionTypes')
@@ -248,6 +250,7 @@ export function FormBuilder({
                   locale={locale}
                   defaultLocale={defaultLocale}
                   typeLabel={tq(q.type)}
+                  participantTypes={participantTypes}
                   selected={q.id === selectedId}
                   onSelect={() => store.select(q.id)}
                   onRemove={() => store.removeQuestion(q.id)}
@@ -267,6 +270,8 @@ export function FormBuilder({
             allQuestions={definition.questions}
             participantTypes={participantTypes}
             defaultLocale={defaultLocale}
+            supportedLocales={supportedLocales}
+            localeNames={localeNames}
             onChange={(patch) => store.updateQuestion(selected.id, patch)}
           />
         ) : (

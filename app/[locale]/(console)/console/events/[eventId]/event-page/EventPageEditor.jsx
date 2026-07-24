@@ -2,9 +2,9 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { useLocale, useTranslations } from 'next-intl'
-import { useRouter } from '@/lib/i18n/navigation'
+import { Link, useRouter } from '@/lib/i18n/navigation'
 import { getSupabaseBrowserClient } from '@/lib/supabase/client'
-import { LOCALES, LOCALE_NAMES } from '@/lib/i18n/locales'
+import { LOCALES, LOCALE_NAMES, eventLocales } from '@/lib/i18n/locales'
 import { eventMediaUrl } from '@/lib/storage'
 import { Button, CheckboxRow, Field, Input, NativeSelect, Textarea } from '@/components/ui'
 import {
@@ -340,7 +340,6 @@ export function EventPageEditor({ initialEvent }) {
   const [saveErrorMsg, setSaveErrorMsg] = useState('')
   const [translateState, setTranslateState] = useState('idle') // idle|working|done|error
   const [translateMsg, setTranslateMsg] = useState('')
-  const [newLangName, setNewLangName] = useState(null) // null = form closed
   const coverInputRef = useRef(null)
   const aboutImgInputRef = useRef(null)
   const agendaImgInputRef = useRef(null)
@@ -367,26 +366,15 @@ export function EventPageEditor({ initialEvent }) {
   // in the same locale maps under `code`; the public page serves them via a
   // ?lang= param (they aren't platform routes).
   const customLangs = Array.isArray(content.i18n?.custom) ? content.i18n.custom : []
-  const customCodes = customLangs.map((c) => c.code)
   const localeName = (code) =>
     LOCALE_NAMES[code] || customLangs.find((c) => c.code === code)?.name || code
 
-  // Languages this event is offered in. Always includes the default language;
-  // otherwise from the explicit list (i18n.available) or the locales that have
-  // an event name filled in. Built-ins kept in LOCALES order, customs appended.
-  const availableLocales = (() => {
-    const explicit = content.i18n?.available
-    const base =
-      Array.isArray(explicit) && explicit.length
-        ? explicit
-        : LOCALES.filter((l) => (event.name?.[l] ?? '').trim() !== '')
-    const valid = new Set([...LOCALES, ...customCodes])
-    const set = new Set(base.filter((l) => valid.has(l)))
-    set.add(event.default_locale)
-    const builtins = LOCALES.filter((l) => set.has(l))
-    const customs = customCodes.filter((c) => set.has(c))
-    return [...builtins, ...customs]
-  })()
+  // Languages this event is offered in. Shared with the public page and the
+  // rest of the console via eventLocales() so every surface agrees. It honors
+  // the legacy supported_locales column, which the old hand-rolled version
+  // here ignored — hiding the language switcher until a name had been typed in
+  // each language, i.e. exactly when the organizer needs it to add that text.
+  const availableLocales = eventLocales(event)
 
   // If the previewed language is no longer available (e.g. just unchecked),
   // fall back to the default language.
@@ -406,31 +394,6 @@ export function EventPageEditor({ initialEvent }) {
   function patchEvent(patch) {
     setEvent((prev) => ({ ...prev, ...patch }))
     markDirty()
-  }
-
-  // Add an organizer-defined language: derive a unique code from the name,
-  // store it in i18n.custom and mark it available.
-  function addCustomLang(rawName) {
-    const name = (rawName || '').trim()
-    if (!name) return
-    const taken = new Set([...LOCALES, ...customCodes])
-    const base = name.toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 8) || 'lang'
-    let code = base
-    let n = 2
-    while (taken.has(code)) code = `${base}${n++}`
-    const nextCustom = [...customLangs, { code, name }]
-    const nextAvailable = [...availableLocales, code]
-    patchContent('i18n', { custom: nextCustom, available: nextAvailable })
-    setNewLangName(null)
-    setPreviewLocale(code)
-  }
-
-  function removeCustomLang(code) {
-    patchContent('i18n', {
-      custom: customLangs.filter((c) => c.code !== code),
-      available: availableLocales.filter((l) => l !== code),
-    })
-    if (previewLocale === code) setPreviewLocale(event.default_locale)
   }
 
   // Fill empty target-language slots by machine-translating the default
@@ -834,16 +797,6 @@ export function EventPageEditor({ initialEvent }) {
     const theme = content.theme ?? {}
     const setTheme = (patch) => patchContent('theme', patch)
     const logo = content.logo ?? {}
-    // availableLocales is computed at component scope. Toggling always keeps
-    // the default language and stays in LOCALES order.
-    const toggleLocale = (l) => {
-      if (l === event.default_locale) return // default can't be removed
-      const set = new Set(availableLocales)
-      if (set.has(l)) set.delete(l)
-      else set.add(l)
-      set.add(event.default_locale)
-      patchContent('i18n', { available: LOCALES.filter((x) => set.has(x)) })
-    }
     // Contrast check on the effective page text vs background.
     const bg = theme.page_bg || (isDark ? '#14161b' : '#ffffff')
     const fg = theme.text_color || (isDark ? '#eceae4' : '#111111')
@@ -1077,67 +1030,25 @@ export function EventPageEditor({ initialEvent }) {
 
         {/* ---- Languages ---- */}
         <h4 className={styles.panelSubhead}>{t('groupLanguages')}</h4>
-        <div className={styles.colorField}>
+        {/* Which languages this event offers is managed in event Settings; this
+            is read-only here, with a link back to Settings to change it. */}
+        <div className={styles.langInfo}>
           <span className="field-label">{t('defaultLanguage')}</span>
-          <NativeSelect
-            value={event.default_locale}
-            onChange={(e) => patchEvent({ default_locale: e.target.value })}
-          >
-            {LOCALES.map((l) => (
-              <option key={l} value={l}>{LOCALE_NAMES[l]}</option>
-            ))}
-          </NativeSelect>
+          <span className={styles.langDefault}>{localeName(event.default_locale)}</span>
         </div>
-        <span className="field-label">{t('availableLanguages')}</span>
-        {LOCALES.map((l) => (
-          <CheckboxRow
-            key={l}
-            label={LOCALE_NAMES[l]}
-            checked={availableLocales.includes(l)}
-            onCheckedChange={() => toggleLocale(l)}
-          />
-        ))}
-        {customLangs.map((c) => (
-          <div key={c.code} className={styles.customLangRow}>
-            <span>{c.name}</span>
-            <Button
-              variant="ghost"
-              size="sm"
-              aria-label={t('remove')}
-              onClick={() => removeCustomLang(c.code)}
-            >
-              ✕
-            </Button>
+        {customLangs.length > 0 ? (
+          <div className={styles.langInfo}>
+            <span className="field-label">{t('customLanguages')}</span>
+            {customLangs.map((c) => (
+              <span key={c.code} className={styles.customLangRow}>{c.name}</span>
+            ))}
           </div>
-        ))}
-        {newLangName === null ? (
-          <Button variant="secondary" size="sm" onClick={() => setNewLangName('')}>
-            {t('addLanguage')}
-          </Button>
         ) : (
-          <div className={styles.addLangForm}>
-            <Input
-              autoFocus
-              placeholder={t('languageNamePlaceholder')}
-              value={newLangName}
-              onChange={(e) => setNewLangName(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') addCustomLang(newLangName)
-                if (e.key === 'Escape') setNewLangName(null)
-              }}
-            />
-            <div className={styles.panelRow}>
-              <Button size="sm" disabled={!newLangName.trim()} onClick={() => addCustomLang(newLangName)}>
-                {t('addLanguageConfirm')}
-              </Button>
-              <Button variant="ghost" size="sm" onClick={() => setNewLangName(null)}>
-                {t('cancel')}
-              </Button>
-            </div>
-          </div>
+          <p className="field-help">{t('noCustomLanguages')}</p>
         )}
-        <p className="field-help">{t('availableLanguagesHelp')}</p>
-        <p className="field-help">{t('customLanguageHelp')}</p>
+        <Link href={`/console/events/${event.id}/settings`} className={styles.langSettingsLink}>
+          {t('addLanguagesInSettings')}
+        </Link>
         <Button
           variant="secondary"
           size="sm"

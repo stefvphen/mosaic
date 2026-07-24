@@ -509,6 +509,7 @@
     "editsNotSaved": "Modifications non enregistrées",
     "dateFormatHint": "Les dates sont affichées à chaque personne dans son format de date préféré (défini dans son profil).",
     "slugWarnRevert": "Rétablir l'URL et enregistrer",
+    "publishNeedsForm": "Publiez au moins un formulaire avant de publier l’événement.",
     "themePresets": "Thèmes prédéfinis",
     "presetLight": "Clair",
     "presetDark": "Sombre",
@@ -580,7 +581,13 @@
     "imageSide": "Côté de l'image",
     "imageSideRight": "Image à droite, texte à gauche",
     "imageSideLeft": "Image à gauche, texte à droite",
-    "imageSideHelp": "L'image remplit toute cette moitié de l'en-tête ; le texte occupe l'autre. Pour un rendu constant, importez une photo portrait (p. ex. 10×15 / 2:3)."
+    "imageSideHelp": "L'image remplit toute cette moitié de l'en-tête ; le texte occupe l'autre. Pour un rendu constant, importez une photo portrait (p. ex. 10×15 / 2:3).",
+    "customLanguages": "Langues personnalisées",
+    "noCustomLanguages": "Aucune langue personnalisée ajoutée pour le moment.",
+    "addLanguagesInSettings": "Ajouter ou gérer les langues dans les Paramètres",
+    "languages": "Langues",
+    "languagesHelp": "Choisissez les langues dans lesquelles cet événement et son formulaire d'inscription sont proposés. Les participants peuvent basculer entre elles ; la langue par défaut est utilisée lorsqu'une traduction manque.",
+    "defaultLanguageHelp": "Utilisée comme solution de repli lorsqu'une traduction manque."
   },
   "questionTypes": {
     "text": "Texte court",
