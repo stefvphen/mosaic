@@ -27,10 +27,14 @@ export function QuestionInspector({
   allQuestions,
   participantTypes,
   defaultLocale,
+  supportedLocales,
   onChange,
 }) {
   const t = useTranslations('console')
   const tr = useTranslations('runtime')
+  // Author only in the languages this event offers; fall back to the full
+  // set if the caller didn't scope them.
+  const locales = supportedLocales?.length ? supportedLocales : LOCALES
   const [editLocale, setEditLocale] = useState(defaultLocale)
 
   function setAddressPart(key, patch) {
@@ -92,13 +96,16 @@ export function QuestionInspector({
   return (
     <div className={styles.inspectorBody}>
       {/* Localized text */}
-      <Tabs value={editLocale} onValueChange={setEditLocale}>
+      <Tabs
+        value={locales.includes(editLocale) ? editLocale : defaultLocale}
+        onValueChange={setEditLocale}
+      >
         <TabsList>
-          {LOCALES.map((l) => (
+          {locales.map((l) => (
             <TabsTrigger key={l} value={l}>{l.toUpperCase()}</TabsTrigger>
           ))}
         </TabsList>
-        {LOCALES.map((l) => (
+        {locales.map((l) => (
           <TabsContent key={l} value={l}>
             <div className={styles.inspectorSection}>
               <Field label={`${t('questionLabel')} (${LOCALE_NAMES[l]})`}>
