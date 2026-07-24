@@ -601,7 +601,10 @@ export function EventPageEditor({ initialEvent }) {
     const file = e.target.files?.[0]
     if (file) {
       const path = await upload(file, 'cover')
-      if (path) patchEvent({ cover_image_path: path })
+      if (path) {
+        patchEvent({ cover_image_path: path })
+        patchContent('hero', { video_url: undefined })
+      }
     }
     e.target.value = ''
   }
@@ -1207,6 +1210,21 @@ export function EventPageEditor({ initialEvent }) {
           />
         )}
         <p className="field-help">{t('coverHelp')}</p>
+        <Field label={t('videoUrl')} help={t('videoHelp')}>
+          {({ id }) => (
+            <Input
+              id={id}
+              type="url"
+              placeholder="https://www.youtube.com/watch?v=..."
+              value={hero.video_url && /^https?:\/\//i.test(hero.video_url) ? hero.video_url : ''}
+              onChange={(e) => {
+                const val = e.target.value || undefined
+                patchContent('hero', { video_url: val })
+                if (val) patchEvent({ cover_image_path: null })
+              }}
+            />
+          )}
+        </Field>
 
         {/* ---- Hero title styling (background, opacity, title size/font/align) ---- */}
         <h4 className={styles.panelSubhead}>{t('heroTitleStyle')}</h4>

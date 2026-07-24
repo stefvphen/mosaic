@@ -224,6 +224,11 @@ export function EventPageView({
 
   const coverUrl = eventMediaUrl(event.cover_image_path)
   const coverIsVideo = event.cover_image_path && /\.(mp4|webm|ogg|mov|m4v)(\?.*)?$/i.test(event.cover_image_path)
+  const heroVideo = videoEmbedSrc(
+    hero.video_url
+      ? ( /^https?:\/\//i.test(hero.video_url) ? hero.video_url : eventMediaUrl(hero.video_url) )
+      : ( coverIsVideo ? coverUrl : null )
+  )
   const name = L(event.name)
   const description = L(event.description)
   const location = L(event.location)
@@ -672,13 +677,22 @@ export function EventPageView({
           <div className={styles.heroSplitInner} data-image-side={hero.image_side === 'left' ? 'left' : 'right'}>
             <div className={styles.heroSplitText}>{heroBody}</div>
             <div className={styles.heroSplitMedia}>
-              {coverUrl ? (
-                coverIsVideo ? (
-                  <video src={coverUrl} autoPlay loop muted playsInline style={imgAdjust(hero, 'cover')} />
+              {heroVideo ? (
+                heroVideo.type === 'iframe' ? (
+                  <iframe
+                    src={heroVideo.src}
+                    title="hero video"
+                    loading="lazy"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    style={imgAdjust(hero, 'cover')}
+                  />
                 ) : (
-                  /* eslint-disable-next-line @next/next/no-img-element */
-                  <img src={coverUrl} alt="" style={imgAdjust(hero, 'cover')} />
+                  <video src={heroVideo.src} autoPlay loop muted playsInline style={imgAdjust(hero, 'cover')} />
                 )
+              ) : coverUrl ? (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img src={coverUrl} alt="" style={imgAdjust(hero, 'cover')} />
               ) : (
                 <div className={styles.heroSplitPlaceholder} aria-hidden="true" />
               )}
@@ -693,21 +707,32 @@ export function EventPageView({
           dataFlat={flatHero}
           {...sectionProps}
         >
-          {coverUrl && (
+          {(heroVideo || coverUrl) && (
             <div
               className={styles.heroBg}
               data-custom-overlay={heroTint ? '' : undefined}
               aria-hidden="true"
             >
-              {coverIsVideo ? (
-                <video src={coverUrl} autoPlay loop muted playsInline style={imgAdjust(hero, 'cover')} />
+              {heroVideo ? (
+                heroVideo.type === 'iframe' ? (
+                  <iframe
+                    src={heroVideo.src}
+                    title="hero video"
+                    loading="lazy"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    style={{ ...imgAdjust(hero, 'cover'), pointerEvents: 'none' }}
+                  />
+                ) : (
+                  <video src={heroVideo.src} autoPlay loop muted playsInline style={imgAdjust(hero, 'cover')} />
+                )
               ) : (
                 /* eslint-disable-next-line @next/next/no-img-element */
                 <img src={coverUrl} alt="" style={imgAdjust(hero, 'cover')} />
               )}
             </div>
           )}
-          {coverUrl && heroTint && (
+          {(coverUrl || heroVideo) && heroTint && (
             <div className={styles.heroTint} style={{ background: heroTint }} aria-hidden="true" />
           )}
           {heroTopBar}
