@@ -498,7 +498,7 @@
     "posTop": "Haut",
     "posBottom": "Bas",
     "imageHeight": "Hauteur de l'image",
-    "videoUrl": "URL de la vidéo (YouTube, Vimeo ou .mp4)",
+    "videoUrl": "URL de la vidéo (YouTube, Vimeo, Google Drive ou .mp4)",
     "videoHelp": "Collez un lien vidéo — il s'affiche à la place de l'image.",
     "heroOpacityHelp": "Teinte l'image de couverture. Sans image, la couleur remplit l'en-tête en plein.",
     "pagePreviewHint": "Voici la page telle que les participants la voient. Survolez une section et cliquez sur le crayon pour la modifier.",
