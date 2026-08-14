@@ -19,6 +19,7 @@ import {
 import { getSupabaseBrowserClient } from '@/lib/supabase/client'
 import { LOCALES, lt } from '@/lib/i18n/locales'
 import { hasStaleTranslations } from '@/lib/form-localization'
+import { eventMediaUrl } from '@/lib/storage'
 import {
   Button,
   NativeSelect,
@@ -42,9 +43,13 @@ const QUESTION_TYPES = [
 ]
 
 export function FormBuilder({
+  formId,
+  eventId,
   versionId,
   versionNumber,
   initialDefinition,
+  initialAppearance,
+  coverImagePath,
   participantTypes,
   eventName,
   defaultLocale,
@@ -60,6 +65,46 @@ export function FormBuilder({
   const store = useBuilderStore()
   const { definition, selectedId, dirty } = store
   const [saveState, setSaveState] = useState('idle') // idle | saving | saved | published
+  const [appearance, setAppearance] = useState(initialAppearance ?? {})
+  const [headerUploading, setHeaderUploading] = useState(false)
+  const headerInputRef = useRef(null)
+
+  async function updateAppearance(nextAppearance) {
+    setAppearance(nextAppearance)
+    if (formId) {
+      await supabase.from('forms').update({ appearance: nextAppearance }).eq('id', formId)
+    }
+  }
+
+  async function onHeaderFile(e) {
+    const file = e.target.files?.[0]
+    if (!file || !eventId) return
+    const maxBytes = 5 * 1024 * 1024
+    if (file.size > maxBytes || !file.type.startsWith('image/')) return
+
+    setHeaderUploading(true)
+    try {
+      const ext = (file.name.split('.').pop() || 'jpg').toLowerCase()
+      const path = `${eventId}/form-header-${Date.now().toString(36)}.${ext}`
+      const { error } = await supabase.storage.from('event-covers').upload(path, file)
+      if (!error) {
+        await updateAppearance({ ...appearance, header_image_path: path })
+      }
+    } finally {
+      setHeaderUploading(false)
+      e.target.value = ''
+    }
+  }
+
+  function onInheritCover() {
+    if (coverImagePath) {
+      updateAppearance({ ...appearance, header_image_path: coverImagePath })
+    }
+  }
+
+  function onRemoveHeader() {
+    updateAppearance({ ...appearance, header_image_path: null })
+  }
   // Edits made in this session that are not live yet. The autosave writes them
   // to the DRAFT version within ~1.2s, so nothing is ever lost here — but the
   // registration form the public fills in is `forms.current_version_id`, and
@@ -476,12 +521,51 @@ export function FormBuilder({
               )}
               <p className={styles.pageTabHint}>{t('formsPageHint')}</p>
             </div>
+            <div className={styles.headerCustomRow}>
+              <span className={styles.headerCustomLabel}>{t('headerImage')}</span>
+              <input
+                ref={headerInputRef}
+                type="file"
+                accept="image/*"
+                hidden
+                onChange={onHeaderFile}
+              />
+              <Button
+                variant="secondary"
+                size="sm"
+                disabled={headerUploading}
+                onClick={() => headerInputRef.current?.click()}
+              >
+                {headerUploading ? '…' : t('uploadHeaderImage')}
+              </Button>
+              {coverImagePath && appearance?.header_image_path !== coverImagePath && (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  disabled={headerUploading}
+                  onClick={onInheritCover}
+                >
+                  {t('inheritHeroImage')}
+                </Button>
+              )}
+              {appearance?.header_image_path && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  disabled={headerUploading}
+                  onClick={onRemoveHeader}
+                >
+                  {t('removeHeaderImage')}
+                </Button>
+              )}
+            </div>
             <div className={styles.pageFrame}>
               <RegisterPreview
                 definition={definition}
                 eventName={eventName}
                 participantTypes={participantTypes}
                 participantTypeKey={previewTypeKey}
+                headerImageUrl={eventMediaUrl(appearance?.header_image_path)}
                 /* The language the form is being previewed in follows the
                    builder's own language control on the Questions tab — the
                    picker inside the frame belongs to the registrant's screen

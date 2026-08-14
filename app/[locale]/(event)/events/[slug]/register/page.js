@@ -8,6 +8,7 @@ import { getContentMessages } from '@/lib/i18n/ui-messages-server'
 import { RegistrationWizard } from '@/components/wizard/RegistrationWizard'
 import { LanguagePicker } from '@/components/ui'
 import { eventPageUrl } from '@/lib/url'
+import { eventMediaUrl } from '@/lib/storage'
 import { resolvePreselectedType, visibleParticipantTypes } from '@/lib/participant-types'
 
 export const dynamic = 'force-dynamic'
@@ -70,12 +71,33 @@ export default async function RegisterPage({ params, searchParams }) {
   const t = createTranslator({ locale, messages: contentMessages, namespace: 'wizard' })
   const tCommon = createTranslator({ locale, messages: contentMessages, namespace: 'common' })
 
+  const { data: types } = await supabase
+    .from('participant_types')
+    .select('id, key, name, capacity, hidden, min_per_registration, max_per_registration, sort_order, form_id, forms:form_id ( current_version_id, appearance )')
+    .eq('event_id', event.id)
+    .order('sort_order')
+  if (!types?.length) notFound()
+
+  // Mode-scoped forms (single/family) override the per-type form when the
+  // respondent picks that registration mode.
+  const { data: modeFormRows } = await supabase
+    .from('forms')
+    .select('registration_mode, current_version_id, appearance')
+    .eq('event_id', event.id)
+    .not('registration_mode', 'is', null)
+
+  // Resolve header background image from form appearance
+  const formAppearance =
+    types.find((pt) => pt.forms?.appearance?.header_image_path)?.forms?.appearance ??
+    modeFormRows?.find((f) => f.appearance?.header_image_path)?.appearance
+  const headerImageUrl = eventMediaUrl(formAppearance?.header_image_path)
+
   // Back to the event page in the language the reader is already in. A plain
   // <a>, not next-intl's Link: eventPageUrl already carries the locale prefix
   // (and a ?lang= for custom languages), which Link would prefix a second time.
   const eventHref = eventPageUrl({ slug, code: contentLocale, uiLocale: locale })
   const backToEvent = (
-    <a href={eventHref} className="btn btn-ghost btn-sm">
+    <a href={eventHref} className={headerImageUrl ? 'btn btn-shell btn-sm' : 'btn btn-ghost btn-sm'}>
       <span aria-hidden="true">&larr;</span> {t('backToEvent')}
     </a>
   )
@@ -141,21 +163,6 @@ export default async function RegisterPage({ params, searchParams }) {
       </div>
     )
   }
-
-  const { data: types } = await supabase
-    .from('participant_types')
-    .select('id, key, name, capacity, hidden, min_per_registration, max_per_registration, sort_order, form_id, forms:form_id ( current_version_id )')
-    .eq('event_id', event.id)
-    .order('sort_order')
-  if (!types?.length) notFound()
-
-  // Mode-scoped forms (single/family) override the per-type form when the
-  // respondent picks that registration mode.
-  const { data: modeFormRows } = await supabase
-    .from('forms')
-    .select('registration_mode, current_version_id')
-    .eq('event_id', event.id)
-    .not('registration_mode', 'is', null)
 
   const versionIds = [
     ...new Set(
@@ -240,38 +247,78 @@ export default async function RegisterPage({ params, searchParams }) {
     wizardElement
   )
 
+  const headerControls = (
+    <div
+      style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        gap: 'var(--s-3)',
+        // The picker keeps the right edge on a narrow screen; the back link
+        // drops to its own line rather than squeezing both onto one.
+        flexWrap: 'wrap',
+        marginBottom: headerImageUrl ? 0 : 'var(--s-3)',
+      }}
+    >
+      {backToEvent}
+      <LanguagePicker
+        options={localeOptions.map((code) => ({
+          value: code,
+          // Short code here too, matching the event page an attendee just
+          // came from; the console keeps full names.
+          label: localeAcronym(code),
+          // Built-in locales have their own route; custom codes ride the
+          // current route via ?lang=.
+          href: eventPageUrl({
+            slug, code, uiLocale: locale, subPath: '/register',
+            params: { type: typeParam },
+          }),
+        }))}
+        value={contentLocale}
+        ariaLabel={tCommon('language')}
+      />
+    </div>
+  )
+
   return (
     <div className="container-narrow" style={{ paddingBlock: 'var(--s-6)' }}>
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          gap: 'var(--s-3)',
-          // The picker keeps the right edge on a narrow screen; the back link
-          // drops to its own line rather than squeezing both onto one.
-          flexWrap: 'wrap',
-          marginBottom: 'var(--s-3)',
-        }}
-      >
-        {backToEvent}
-        <LanguagePicker
-          options={localeOptions.map((code) => ({
-            value: code,
-            // Short code here too, matching the event page an attendee just
-            // came from; the console keeps full names.
-            label: localeAcronym(code),
-            // Built-in locales have their own route; custom codes ride the
-            // current route via ?lang=.
-            href: eventPageUrl({
-              slug, code, uiLocale: locale, subPath: '/register',
-              params: { type: typeParam },
-            }),
-          }))}
-          value={contentLocale}
-          ariaLabel={tCommon('language')}
-        />
-      </div>
+      {headerImageUrl ? (
+        <div
+          style={{
+            position: 'relative',
+            overflow: 'hidden',
+            borderRadius: 'var(--r-md)',
+            padding: 'var(--s-4) var(--s-4) var(--s-5)',
+            marginBottom: 'var(--s-4)',
+            color: '#ffffff',
+          }}
+        >
+          <img
+            src={headerImageUrl}
+            alt=""
+            style={{
+              position: 'absolute',
+              inset: 0,
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              objectPosition: 'center',
+              zIndex: 0,
+            }}
+          />
+          <div
+            style={{
+              position: 'absolute',
+              inset: 0,
+              background: 'linear-gradient(180deg, rgba(0, 0, 0, 0.45) 0%, rgba(0, 0, 0, 0.7) 100%)',
+              zIndex: 1,
+            }}
+          />
+          <div style={{ position: 'relative', zIndex: 2 }}>{headerControls}</div>
+        </div>
+      ) : (
+        headerControls
+      )}
       <h1 className="page-title" style={{ marginBottom: 'var(--s-5)' }}>
         {t('title', { event: lt(event.name, contentLocale, event.default_locale) })}
       </h1>

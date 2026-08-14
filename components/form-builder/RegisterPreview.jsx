@@ -59,6 +59,7 @@ export function RegisterPreview({
   eventName,
   participantTypes,
   participantTypeKey,
+  headerImageUrl,
   locale,
   defaultLocale,
   supportedLocales,
@@ -87,6 +88,7 @@ export function RegisterPreview({
         eventName={eventName}
         participantTypes={participantTypes}
         participantTypeKey={participantTypeKey}
+        headerImageUrl={headerImageUrl}
         locale={locale}
         defaultLocale={defaultLocale}
         supportedLocales={supportedLocales}
@@ -103,6 +105,7 @@ function RegisterPreviewBody({
   eventName,
   participantTypes,
   participantTypeKey,
+  headerImageUrl,
   locale,
   defaultLocale,
   supportedLocales,
@@ -116,43 +119,55 @@ function RegisterPreviewBody({
   const type = participantTypes.find((pt) => pt.key === participantTypeKey)
   const typeName = type ? lt(type.name, locale, defaultLocale) || type.key : ''
 
+  const headerControls = (
+    <div
+      style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        gap: 'var(--s-3)',
+        flexWrap: 'wrap',
+        marginBottom: headerImageUrl ? 0 : 'var(--s-3)',
+      }}
+    >
+      {/* The real page renders this as an <a>; a button with nothing behind
+          it is the same thing minus the navigation. Built from the shared
+          Button either way, so the two can never diverge visually. */}
+      <Button variant={headerImageUrl ? 'shell' : 'ghost'} size="sm" className={styles.inert}>
+        <span aria-hidden="true">&larr;</span> {t('backToEvent')}
+      </Button>
+      {/* No `href` and no `onChange`, so choosing a language does nothing and
+          the select snaps back to the previewed one. Renders nothing at all
+          when the event is offered in a single language — which is what the
+          register page does too, and the reason this is the real component
+          rather than a drawn-on lookalike. */}
+      <LanguagePicker
+        options={supportedLocales.map((code) => ({
+          value: code,
+          // Short codes here, matching the event page an attendee just came
+          // from; the console's own pickers keep full names.
+          label: localeAcronym(code),
+        }))}
+        value={locale}
+        ariaLabel={tCommon('language')}
+      />
+    </div>
+  )
+
   return (
     <div className="container-narrow" style={{ paddingBlock: 'var(--s-6)' }}>
       {/* The register page's own header row, rule for rule: the picker holds
           the right edge and the back link drops to its own line on a narrow
           screen rather than squeezing both onto one. */}
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          gap: 'var(--s-3)',
-          flexWrap: 'wrap',
-          marginBottom: 'var(--s-3)',
-        }}
-      >
-        {/* The real page renders this as an <a>; a button with nothing behind
-            it is the same thing minus the navigation. Built from the shared
-            Button either way, so the two can never diverge visually. */}
-        <Button variant="ghost" size="sm" className={styles.inert}>
-          <span aria-hidden="true">&larr;</span> {t('backToEvent')}
-        </Button>
-        {/* No `href` and no `onChange`, so choosing a language does nothing and
-            the select snaps back to the previewed one. Renders nothing at all
-            when the event is offered in a single language — which is what the
-            register page does too, and the reason this is the real component
-            rather than a drawn-on lookalike. */}
-        <LanguagePicker
-          options={supportedLocales.map((code) => ({
-            value: code,
-            // Short codes here, matching the event page an attendee just came
-            // from; the console's own pickers keep full names.
-            label: localeAcronym(code),
-          }))}
-          value={locale}
-          ariaLabel={tCommon('language')}
-        />
-      </div>
+      {headerImageUrl ? (
+        <div className={styles.headerZone}>
+          <img src={headerImageUrl} alt="" className={styles.headerBg} />
+          <div className={styles.headerOverlay} />
+          <div className={styles.headerContent}>{headerControls}</div>
+        </div>
+      ) : (
+        headerControls
+      )}
 
       <h1 className="page-title" style={{ marginBottom: 'var(--s-5)' }}>
         {t('title', { event: lt(eventName, locale, defaultLocale) })}
